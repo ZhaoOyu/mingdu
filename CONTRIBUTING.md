@@ -31,4 +31,6 @@ Prefer small changes and tests for observable behavior. Preserve read-only start
 
 Run `python tools/build_desktop.py` on the OS/architecture being packaged. macOS Intel and Apple Silicon archives are separate. CI archives are unsigned development builds; release signing and notarization require maintainer credentials. Do not commit credentials or helper binaries.
 
+After building the bundle, `python tools/build_installers.py` creates and validates native installers (Windows needs Inno Setup 6; macOS uses hdiutil). Ubuntu deb uses `python tools/build_deb.py`. See [release workflow](docs/RELEASING.md) for preview publication.
+
 The project code is MIT-licensed. Third-party components keep their own licenses; see `THIRD_PARTY_NOTICES.md`. Contributions are provided under the project license.

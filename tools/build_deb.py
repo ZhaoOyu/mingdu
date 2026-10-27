@@ -34,6 +34,7 @@ def build():
         docs.mkdir(parents=True)
         shutil.copy2(ROOT / "README.md", docs / "README.md")
         shutil.copy2(ROOT / "LICENSE", docs / "copyright")
+        shutil.copy2(ROOT / "docs/INSTALL.md", docs / "INSTALL.md")
         control = package / "DEBIAN/control"
         control.parent.mkdir()
         control.write_text(

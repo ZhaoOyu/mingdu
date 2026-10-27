@@ -8,7 +8,8 @@ data = [(str(root / name), "docs") for name in (
     "LICENSE", "README.md", "README.en.md", "THIRD_PARTY_NOTICES.md",
 )]
 data += copy_metadata("PySide6-Essentials") + copy_metadata("shiboken6")
-data += [(str(root / "licenses"), "docs/licenses")]
+data += [(str(root / "licenses"), "docs/licenses"),
+         (str(root / "docs/INSTALL.md"), "docs")]
 a = Analysis(
     [str(root / "brightness/launcher.py")],
     pathex=[str(root)], binaries=[], datas=data,

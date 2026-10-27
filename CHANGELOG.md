@@ -1,7 +1,9 @@
 # Changelog
 
-## 1.1.0 — 2026-10-27 (development)
+## 1.1.0 — 2026-10-27 (Preview 1)
 
+- Native Windows installer, macOS DMGs, gated GitHub prereleases and SHA-256 checksums.
+- User-focused download pages and bilingual installation instructions.
 - Shared Qt tray/panel frontend, retaining Ubuntu GTK compatibility.
 - Windows DXVA2 DDC/CI and WMI adapters with scoped native handles and readback.
 - macOS m1ddc, ddcctl and brightness adapters with helper discovery and device identity checks.
