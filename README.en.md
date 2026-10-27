@@ -31,7 +31,7 @@ python3 -m venv .venv
 
 On Windows use `py -3 -m venv .venv` and `.venv\Scripts\python.exe` instead. No administrator privileges or external DDC utility are required on Windows. System policy may restrict PowerShell/WMI.
 
-Ubuntu needs `ddcutil` for external monitors and an enabled GNOME AppIndicator extension. Qt/X11 may need `libxcb-cursor0`. The small GTK deb installs dependencies using `sudo apt install ./mingdu_1.1.0_all.deb` without pip.
+Ubuntu needs `ddcutil` for external monitors and an enabled GNOME AppIndicator extension. Minimal systems also need Qt runtime packages `libegl1 libopengl0 libxcb-cursor0 libxkbcommon-x11-0`. The small GTK deb installs dependencies using `sudo apt install ./mingdu_1.1.0_all.deb` without pip.
 
 Install macOS helpers separately:
 

@@ -59,7 +59,7 @@ python3 -m venv .venv
 .venv/bin/python -m brightness --ui qt
 ```
 
-Ubuntu 若缺少 venv，安装 `python3-venv`；外接屏幕安装 `ddcutil`。Qt X11 可能需要 `libxcb-cursor0`；GNOME 仍需托盘扩展。Wayland 与 X11 使用相同硬件后端。
+Ubuntu 若缺少 venv，安装 `python3-venv`；外接屏幕安装 `ddcutil`。精简系统的 Qt 运行库可安装 `libegl1 libopengl0 libxcb-cursor0 libxkbcommon-x11-0`；GNOME 仍需托盘扩展。Wayland 与 X11 使用相同硬件后端。
 
 macOS 辅助工具按需安装：
 

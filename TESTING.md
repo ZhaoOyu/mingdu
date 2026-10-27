@@ -4,8 +4,9 @@
 
 Local environment: Ubuntu 26.04, Python 3.14. Qt tests use an offscreen renderer and simulated displays. No physical monitor writes were performed.
 
-- 30 unit tests: Linux parsing/range/error/queue/config behavior; Windows handle scopes, disconnects, range conversion and WMI encoding; macOS helper parsing, UUID selection, changed Intel display order, readback and missing helpers; platform selection and startup files.
+- 31 unit tests (one native ABI check runs only on Windows): Linux parsing/range/error/queue/config behavior; Windows handle scopes, disconnects, range conversion, WMI encoding and ctypes layouts; macOS helper parsing, UUID selection, changed Intel display order, readback and missing helpers; platform selection and startup files.
 - Real Qt widget integration: slider debounce, QAction tray commands, individual scrolling, multi-monitor presets, failure rollback, stale result suppression, refresh ordering, empty state and demo mode.
+- Two-process tests validate single-instance activation both from source and from the frozen application, with temporary user configuration and simulated displays.
 - GitHub Actions is configured for Ubuntu, Windows, macOS arm64 and Intel tests/native packaging, plus GTK compatibility. Check the actual workflow run before describing a remote job as passed.
 
 ## 1.0 baseline · 2026-10-23

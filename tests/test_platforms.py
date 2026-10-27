@@ -1,16 +1,18 @@
 import base64
+import ctypes
 from contextlib import contextmanager
 import json
 from pathlib import Path
 import plistlib
 import tempfile
+import sys
 import unittest
 from unittest.mock import patch
 
 from brightness.backends import Display, HardwareError
 from brightness.platforms import create_hardware
 from brightness.platforms.macos import MacHardware, parse_apple_brightness, parse_ddcctl_brightness, parse_ddcctl_displays, parse_m1_displays
-from brightness.platforms.windows import NativeMonitor, WindowsHardware, WindowsWMI
+from brightness.platforms.windows import NativeMonitor, WindowsDDC, WindowsHardware, WindowsWMI
 from brightness.startup import Startup
 
 
@@ -110,6 +112,14 @@ class FakeWMI:
 
 
 class WindowsTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "win32", "Windows native ABI only")
+    def test_native_api_exports_and_structure_layout_without_hardware_calls(self):
+        driver = WindowsDDC()
+        self.assertEqual(ctypes.sizeof(driver.Info), 104)
+        self.assertEqual(ctypes.sizeof(driver.Device), 840)
+        self.assertEqual(ctypes.sizeof(driver.Physical), ctypes.sizeof(ctypes.c_void_p) + 256)
+        self.assertEqual(driver.dxva.SetVCPFeature.argtypes[0], ctypes.c_void_p)
+
     def test_ddc_read_write_and_handle_scope(self):
         driver = FakeDDC()
         hardware = WindowsHardware(driver, FakeWMI())

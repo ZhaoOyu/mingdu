@@ -1,5 +1,6 @@
 """Verify two real processes activate one Qt instance, using only demo hardware."""
 import os
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -10,12 +11,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--executable", type=Path, help="Validate a frozen executable instead of source")
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="mingdu-instance-") as directory:
         root = Path(directory)
         environment = {**os.environ, "QT_QPA_PLATFORM": "offscreen", "HOME": directory,
                        "APPDATA": directory, "XDG_CONFIG_HOME": directory,
                        "PYTHONPATH": str(ROOT), "PYTHONUTF8": "1"}
-        command = [sys.executable, "-m", "brightness", "--demo", "--ui", "qt", "--background"]
+        entry = [str(args.executable.resolve())] if args.executable else [sys.executable, "-m", "brightness"]
+        command = entry + ["--demo", "--ui", "qt", "--background"]
         with (root / "output.log").open("w+", encoding="utf-8") as log:
             first = subprocess.Popen(command, cwd=root, env=environment, stdout=log, stderr=log)
             try:
