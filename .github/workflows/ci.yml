@@ -61,6 +61,14 @@ jobs:
         run: python tools/build_desktop.py
       - name: Launch frozen app (demo only)
         run: python tools/smoke_bundle.py
+      - name: Ensure Windows installer compiler
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: Build and validate native installers
         run: python tools/build_installers.py
       - name: Upload packages and preview
