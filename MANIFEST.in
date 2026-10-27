@@ -1,0 +1,10 @@
+include README.md README.en.md LICENSE THIRD_PARTY_NOTICES.md
+include CHANGELOG.md CONTRIBUTING.md SECURITY.md TESTING.md
+include mingdu install.sh
+recursive-include tools *.py
+recursive-include tests *.py
+recursive-include packaging *.spec
+recursive-include licenses *.txt
+recursive-include docs *.png
+recursive-include .github *.yml *.md
+global-exclude __pycache__ *.py[cod]

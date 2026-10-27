@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mingdu-brightness"
+dynamic = ["version"]
+description = "Cross-platform system tray brightness control for Ubuntu, Windows and macOS"
+readme = "README.en.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "licenses/*.txt"]
+authors = [{name = "Mingdu contributors"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: Qt",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Desktop Environment",
+]
+
+[project.optional-dependencies]
+qt = ["PySide6-Essentials>=6.8,<7"]
+build = ["PyInstaller>=6.11,<7", "build>=1.2,<2"]
+
+[project.scripts]
+mingdu = "brightness.__main__:main"
+
+[project.gui-scripts]
+mingdu-gui = "brightness.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/ZhaoOyu/mingdu"
+Issues = "https://github.com/ZhaoOyu/mingdu/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "brightness.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["brightness*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]

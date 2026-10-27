@@ -1,0 +1,90 @@
+name: Test and build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            python: '3.12'
+          - os: windows-2025
+            python: '3.12'
+          - os: macos-15
+            python: '3.12'
+          - os: macos-15-intel
+            python: '3.12'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install application and build tools
+        run: python -m pip install ".[qt,build]" ruff
+      - name: Check Python errors
+        run: python -m ruff check .
+      - name: Unit tests (mock hardware only)
+        run: python -m unittest discover -s tests -v
+      - name: Qt integration tests (mock hardware only)
+        run: python tests/qt_smoke.py
+      - name: Qt single-instance process test (demo only)
+        run: python tests/qt_instance_smoke.py
+      - name: Build wheel and source distribution
+        run: python -m build
+      - name: Build native desktop archive
+        run: python tools/build_desktop.py
+      - name: Upload packages and preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingdu-${{ matrix.os }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.whl
+            dist/*.sha256
+            dist/qt-preview.png
+
+  ubuntu-gtk:
+    name: Ubuntu GTK compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native GTK test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 xvfb xauth dbus-x11 desktop-file-utils
+      - name: Test GTK and build deb
+        run: |
+          /usr/bin/python3 -m unittest discover -s tests -v
+          xvfb-run -a dbus-run-session -- /usr/bin/python3 tests/ui_smoke.py
+          /usr/bin/python3 tools/build_deb.py
+          dpkg-deb --contents dist/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mingdu-ubuntu-deb
+          if-no-files-found: error
+          path: dist/*.deb
