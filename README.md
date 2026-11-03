@@ -8,7 +8,7 @@
 
 [下载已发布预览版](#下载) · [安装指南](docs/INSTALL.md) · [反馈问题](https://github.com/ZhaoOyu/mingdu/issues) · [English](README.en.md)
 
-> **1.2.0 Preview 1：原生 Mac 面板、太阳亮度圆环，全新上线。** Mac 所需辅助工具已随应用提供，无需安装 Homebrew；Windows 和 Ubuntu 也采用统一的紧凑布局。
+> **1.2.1 Preview 1** 在 Mac 上使用 Swift 原生面板。内置屏幕和外接屏幕用不同颜色标识，亮度条收起了密集的刻度点。拖动可选 1% 到 100% 的任意整数，选中滑块后按左右方向键，每次微调 1%。
 
 <p align="center">
   <picture>
@@ -34,14 +34,14 @@
 
 ## 下载
 
-**当前版本：1.2.0 Preview 1。** 包含上方展示的新界面与太阳亮度圆环，欢迎体验并反馈显示器兼容性。
+**当前版本：1.2.1 Preview 1。** 包含上方展示的新界面与太阳亮度圆环，欢迎体验并反馈显示器兼容性。
 
 | 你的系统 | 下载 | 如何安装 |
 |---|---|---|
-| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-arm64.dmg) | 拖入“应用程序”，已内置辅助工具 |
-| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-x86_64.dmg) | 拖入“应用程序”，已内置辅助工具 |
-| Windows 10 / 11 · x64 | [安装程序](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-windows-x86_64-setup.exe) | 双击安装，无需单独安装 Python |
-| Ubuntu 22.04 / 24.04 / 26.04 | [DEB 安装包](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu_1.2.0_all.deb) | 使用 apt 安装，自动处理系统依赖 |
+| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-arm64.dmg) | 拖入“应用程序”，已内置辅助工具 |
+| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-x86_64.dmg) | 拖入“应用程序”，已内置辅助工具 |
+| Windows 10 / 11 · x64 | [安装程序](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-windows-x86_64-setup.exe) | 双击安装，无需单独安装 Python |
+| Ubuntu 22.04 / 24.04 / 26.04 | [DEB 安装包](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu_1.2.1_all.deb) | 使用 apt 安装，自动处理系统依赖 |
 
 [所有下载与校验文件](https://github.com/ZhaoOyu/mingdu/releases) · [完整安装步骤](docs/INSTALL.md)
 

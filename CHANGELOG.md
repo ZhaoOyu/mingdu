@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 — 2026-11-04 (Preview 1)
+
+- Mac 原生面板迁移至 Swift，修复弹窗顶端裁切。
+- 逐屏滑块隐藏刻度点，保留 1% 拖动与键盘步进。
+
 ## 1.2.0 — 2026-11-03 (Preview 1)
 
 - Brightness indicators now use an upper progress arc, central number and bottom sun across macOS, Qt and GTK.

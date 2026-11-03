@@ -24,6 +24,7 @@ if sys.platform == "darwin":
         assert (docs / f"{name}-LICENSE.txt").stat().st_size > 100
         source = docs / f"{name}-source.tar.gz"
         assert hashlib.sha256(source.read_bytes()).hexdigest() == entry["source_sha256"]
+    subprocess.run([str(executable), "--demo", "--smoke-test"], check=True, timeout=12)
     print("PASS: bundled helpers, architecture, source archives and license notices")
 subprocess.run([sys.executable, str(root / "tests/qt_instance_smoke.py"), "--executable", str(executable)]
                + (["--native"] if sys.platform == "darwin" else []), check=True)

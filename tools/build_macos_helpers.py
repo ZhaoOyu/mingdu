@@ -35,6 +35,8 @@ def build_helpers():
     binaries.mkdir(parents=True)
     docs.mkdir()
     environment = dict(os.environ)
+    if Path("/Applications/Xcode.app/Contents/Developer").is_dir():
+        environment.setdefault("DEVELOPER_DIR", "/Applications/Xcode.app/Contents/Developer")
     environment.setdefault("CLANG_MODULE_CACHE_PATH", str(ROOT / "build/clang-module-cache"))
     manifest = []
     for name in helper_names():

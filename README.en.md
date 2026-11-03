@@ -8,7 +8,7 @@ Free, open source, and local. Available for **macOS, Windows, and Ubuntu**.
 
 [Download](#download) · [Installation guide](docs/INSTALL.md#english-quick-start) · [Report an issue](https://github.com/ZhaoOyu/mingdu/issues) · [简体中文](README.md)
 
-> **1.2.0 Preview 1 brings a native Mac panel and a sun-shaped brightness ring.** Mac helpers are bundled—no Homebrew needed. Windows and Ubuntu share the refreshed compact layout.
+> **1.2.1 Preview 1** introduces a Swift menu bar panel on Mac. Color-coded icons distinguish built-in and external screens. Drag the smooth slider to a whole percentage or focus it and use the arrow keys for 1% adjustments.
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/preview-dark.png"><img src="docs/preview.png" width="366" alt="Native Mac brightness panel with separate display sliders, presets and tray display selection"></picture></p>
 <p align="center"><sub>Native control preview with simulated monitors. System translucency and shadows appear in the running app. The UI is Chinese. <a href="docs/preview-gtk.png">Ubuntu preview</a></sub></p>
@@ -29,14 +29,14 @@ Mingdu controls system backlights and monitor hardware brightness rather than pl
 
 ## Download
 
-**Current version: 1.2.0 Preview 1**, including the redesigned interface and sun-shaped brightness ring shown above. Try it and share your display compatibility feedback.
+**Current version: 1.2.1 Preview 1**, including the redesigned interface and sun-shaped brightness ring shown above. Try it and share your display compatibility feedback.
 
 | System | Download | Installation |
 |---|---|---|
-| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-arm64.dmg) | Drag to Applications; helpers are included |
-| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-x86_64.dmg) | Drag to Applications; helpers are included |
-| Windows 10 / 11 · x64 | [Installer](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-windows-x86_64-setup.exe) | Double-click; no separate Python installation |
-| Ubuntu 22.04 / 24.04 / 26.04 | [DEB package](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu_1.2.0_all.deb) | Install using apt to resolve system dependencies |
+| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-arm64.dmg) | Drag to Applications; helpers are included |
+| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-x86_64.dmg) | Drag to Applications; helpers are included |
+| Windows 10 / 11 · x64 | [Installer](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-windows-x86_64-setup.exe) | Double-click; no separate Python installation |
+| Ubuntu 22.04 / 24.04 / 26.04 | [DEB package](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu_1.2.1_all.deb) | Install using apt to resolve system dependencies |
 
 [All downloads and checksums](https://github.com/ZhaoOyu/mingdu/releases) · [Installation instructions](docs/INSTALL.md)
 

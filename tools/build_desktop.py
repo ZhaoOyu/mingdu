@@ -14,13 +14,14 @@ from brightness import __version__
 
 def build():
     if sys.platform == "darwin":
-        from tools.build_macos_helpers import build_helpers
-        build_helpers()
-    subprocess.run([
-        sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
-        "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build/pyinstaller"),
-        str(ROOT / "packaging/mingdu.spec"),
-    ], cwd=ROOT, check=True)
+        from tools.build_swift_app import build_app
+        build_app()
+    else:
+        subprocess.run([
+            sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
+            "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build/pyinstaller"),
+            str(ROOT / "packaging/mingdu.spec"),
+        ], cwd=ROOT, check=True)
     system = {"win32": "windows", "darwin": "macos"}.get(sys.platform, "linux")
     architecture = platform.machine().lower().replace("amd64", "x86_64").replace("aarch64", "arm64")
     base = ROOT / "dist" / f"mingdu-{__version__}-{system}-{architecture}"
