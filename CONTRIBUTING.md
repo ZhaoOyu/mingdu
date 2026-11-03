@@ -21,13 +21,19 @@ python -m ruff check .
 - `backends.py`: common display model and Linux driver.
 - `platforms/`: lazy-selected Windows and macOS drivers.
 - `worker.py`: one serial hardware worker; coalesce pending slider requests per device.
-- `qt_app.py`: cross-platform panel, tray and controller. GUI state is updated on the main thread.
+- `macos_app.py`: native AppKit popover, SF Symbols and system controls; default on macOS.
+- `native_controller.py`: main-thread state and queued hardware results for AppKit.
+- `native_instance.py`: macOS process lock and activation notifications.
+- `qt_app.py`: Windows/Linux panel, tray and controller (optional source frontend on macOS). GUI state is updated on the main thread.
 - `app.py`: maintained GTK compatibility frontend for the small Ubuntu deb package.
+- `tools/build_macos_helpers.py`: pinned upstream helper builds, source archives and notices for macOS bundles.
 - `startup.py`: per-user startup registration; do not request admin privileges.
 
 Prefer small changes and tests for observable behavior. Preserve read-only startup: discovering a display must never change its brightness. Never invent a successful hardware result when reads fail. Keep optional controls capability-driven and isolate a faulty monitor from the rest.
 
 ## Packaging
+
+macOS builds require Git and Xcode command-line tools. The build fetches fixed upstream helper commits, builds the matching architecture, and includes executable helpers plus their licenses and exact source archives; no Homebrew is needed at runtime.
 
 Run `python tools/build_desktop.py` on the OS/architecture being packaged. macOS Intel and Apple Silicon archives are separate. CI archives are unsigned development builds; release signing and notarization require maintainer credentials. Do not commit credentials or helper binaries.
 

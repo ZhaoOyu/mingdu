@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "Cross-platform system tray brightness control for Ubuntu, Windows and macOS"
 readme = "README.en.md"
 requires-python = ">=3.10"
+dependencies = ["pyobjc-framework-Cocoa>=10,<14; sys_platform == 'darwin'"]
 license = "MIT"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "licenses/*.txt"]
 authors = [{name = "Mingdu contributors"}]

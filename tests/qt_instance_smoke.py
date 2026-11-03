@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--executable", type=Path, help="Validate a frozen executable instead of source")
+    parser.add_argument("--native", action="store_true", help="Test default macOS AppKit frontend")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="mingdu-instance-") as directory:
         root = Path(directory)
@@ -20,7 +21,8 @@ def main():
                        "APPDATA": directory, "XDG_CONFIG_HOME": directory,
                        "PYTHONPATH": str(ROOT), "PYTHONUTF8": "1"}
         entry = [str(args.executable.resolve())] if args.executable else [sys.executable, "-m", "brightness"]
-        command = entry + ["--demo", "--ui", "qt", "--background"]
+        command = entry + ["--demo", "--ui", "auto" if args.native else "qt", "--background"]
+        lock_name = "native-demo.lock" if args.native else "qt-demo.lock"
         with (root / "output.log").open("w+", encoding="utf-8") as log:
             first = subprocess.Popen(command, cwd=root, env=environment, stdout=log, stderr=log)
             try:
@@ -28,7 +30,7 @@ def main():
                 while time.monotonic() < deadline:
                     if first.poll() is not None:
                         raise AssertionError("First instance exited during startup")
-                    if list(root.rglob("qt-demo.lock")):
+                    if any(path.stat().st_size for path in root.rglob(lock_name)):
                         break
                     time.sleep(0.05)
                 else:
@@ -37,7 +39,7 @@ def main():
                                         text=True, timeout=8)
                 assert second.returncode == 0, second.stderr
                 assert first.poll() is None
-                print("PASS: secondary Qt process exits after activating existing demo instance")
+                print("PASS: secondary process exits after activating existing demo instance (" + ("AppKit" if args.native else "Qt") + ")")
             finally:
                 first.terminate()
                 try:

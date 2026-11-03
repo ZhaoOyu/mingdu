@@ -34,12 +34,14 @@ GNOME 仍需托盘扩展。建议优先使用 deb；不要同时启动 GTK 和 Q
 
 ## macOS
 
+**新版（尚未发布）使用原生 AppKit 弹出面板，并已内置辅助工具：** Apple Silicon 包含 `brightness` 与 `m1ddc`，Intel 包含 `brightness` 与 `ddcctl`。拖入 Applications 即可使用，无需 Homebrew、管理员权限或首次启动下载。工具仅在应用内部运行，不写入系统工具目录；卸载应用时一并移除。下方手动安装步骤仅适用于已发布的 Preview 1 和源码运行。
+
 1. 在“关于本机”查看芯片：Apple M 系列下载 `arm64.dmg`；Intel 下载 `x86_64.dmg`。预构建包要求 **macOS 15 或更高版本**。
 2. 打开 DMG，将 `Mingdu.app` 拖到 `Applications`，然后弹出磁盘映像。
-3. 安装需要的硬件辅助工具；应用已经包含 Python 与 Qt。
+3. 新版测试包使用 macOS 原生 AppKit 界面，已包含 Python 和硬件辅助工具。使用旧版 Preview 1 或源码时，按下方说明安装辅助工具。
 4. 从“应用程序”启动明度，在菜单栏图标中打开面板。
 
-通过 [Homebrew](https://brew.sh/) 按需安装工具：
+旧版 Preview 1 或源码运行，可通过 [Homebrew](https://brew.sh/) 按需安装工具：
 
 ```sh
 brew install brightness  # 内置屏幕及系统支持的 Apple 背光设备
@@ -47,7 +49,7 @@ brew install m1ddc       # Apple Silicon 外接 DDC/CI 显示器
 # Intel Mac 外接显示器改用：brew install ddcctl
 ```
 
-不必为了外接显示器安装 `brightness`，也不必同时安装 m1ddc 与 ddcctl。应用会查找 `/opt/homebrew/bin` 和 `/usr/local/bin`。Apple Silicon 使用原生 arm64 版本。工具已安装并不保证某个连接端口、转接器或显示器支持调节。
+不必为了外接显示器安装 `brightness`，也不必同时安装 m1ddc 与 ddcctl。新版优先使用应用包内的工具；源码或旧包会查找 PATH、`/opt/homebrew/bin` 和 `/usr/local/bin`。Apple Silicon 使用原生 arm64 版本。工具已安装并不保证某个连接端口、转接器或显示器支持调节。
 
 ### 首次打开
 
@@ -125,3 +127,5 @@ Windows/macOS previews do not have trusted signing or Apple notarization. Verify
 Compare the installer hash with `SHA256SUMS.txt`, using `sha256sum` on Ubuntu, `shasum -a 256` on macOS, or `Get-FileHash -Algorithm SHA256` in PowerShell. SHA-256 checks integrity, not publisher identity.
 
 Refresh after reconnecting or waking displays. Disable login startup and quit before uninstalling. Remove the deb with `sudo apt remove mingdu`, use Windows Installed Apps, or delete the macOS application/portable folder. Settings are retained. Updates are installed manually; there is no automatic updater.
+
+Upcoming macOS builds bundle the architecture-specific brightness helpers and their licenses/source. No Homebrew or first-launch download is needed. Published Preview 1 and source checkouts still use the manual helper instructions above.

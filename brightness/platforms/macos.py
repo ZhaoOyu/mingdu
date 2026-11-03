@@ -1,12 +1,13 @@
-"""Adapters for separately installed macOS command-line hardware helpers.
+"""Adapters for bundled or separately installed macOS hardware helpers.
 
-No helper binaries or upstream code are bundled. Use stable UUIDs/CG display IDs
+Use stable UUIDs/CG display IDs
 where possible; ddcctl's index-only API is resolved anew before each operation.
 """
 import platform
 from pathlib import Path
 import re
 import shutil
+import sys
 
 from brightness.backends import Display, HardwareError, ScanResult, percent, raw_value, run_command
 
@@ -15,6 +16,12 @@ UUID = r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}"
 
 
 def find_helper(name):
+    if name not in ("brightness", "m1ddc", "ddcctl"):
+        return None
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        bundled = Path(sys._MEIPASS) / "helpers" / name
+        if bundled.is_file() and bundled.stat().st_mode & 0o111:
+            return str(bundled)
     found = shutil.which(name)
     if found:
         return found

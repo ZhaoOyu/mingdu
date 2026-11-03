@@ -7,31 +7,26 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("AyatanaAppIndicator3", "0.1")
-from gi.repository import AyatanaAppIndicator3 as AppIndicator, Gdk, Gio, GLib, Gtk
+from gi.repository import AyatanaAppIndicator3 as AppIndicator, Gdk, Gio, GLib, Gtk, Pango
 
+from . import __version__
 from .settings import Settings
+from .presentation import brightness_summary, device_kind
+from .gtk_icon import IconCache
 from .worker import HardwareWorker
 
 
 CSS = b"""
-.brightness-window { background: #f5f4f1; color: #272b30; }
-.brightness-window headerbar { background: #f5f4f1; color: #272b30; box-shadow: none; }
-.brightness-window .hero { font-size: 26px; font-weight: 800; }
-.brightness-window .muted { color: #6d7177; font-size: 12px; }
-.brightness-window .eyebrow { color: #a85c24; font-size: 11px; font-weight: 700; }
-.brightness-window .card { background: #ffffff; border: 1px solid #e5e3de; border-radius: 16px; padding: 18px; }
-.brightness-window .monitor-name { font-size: 15px; font-weight: 700; }
-.brightness-window .value { font-size: 28px; font-weight: 700; color: #b65d27; }
-.brightness-window .badge { color: #397263; background: #edf5ef; border-radius: 6px; padding: 4px 8px; font-size: 10px; }
-.brightness-window scale trough { min-height: 6px; border-radius: 8px; background: #eae8e3; }
-.brightness-window scale highlight { background: #d78043; border-color: #d78043; border-radius: 8px; }
-.brightness-window scale slider { background: #ffffff; border: 2px solid #cd743b; min-width: 16px; min-height: 16px; }
-.brightness-window button { background: #ffffff; color: #30343a; border: 1px solid #dedcd7; border-radius: 9px; padding: 7px 12px; }
-.brightness-window button:disabled { color: #9b9b9b; background: #f1f0ee; }
-.brightness-window .preset { background: #ffffff; border: 1px solid #e5e3de; box-shadow: none; }
-.brightness-window .status { color: #6d7177; font-size: 11px; }
-.brightness-window .error { color: #b23c28; }
-.brightness-window .empty { padding: 28px; }
+.brightness-window { background: @theme_bg_color; color: @theme_fg_color; }
+.brightness-window .hero { font-size: 17px; font-weight: bold; }
+.brightness-window .muted { color: alpha(@theme_fg_color, 0.62); font-size: 12px; }
+.brightness-window .card { background: transparent; border-bottom: 1px solid alpha(@theme_fg_color, 0.16); padding: 2px 0 12px; }
+.brightness-window .monitor-name { font-size: 14px; font-weight: bold; }
+.brightness-window .value { font-size: 18px; font-weight: bold; }
+.brightness-window button { padding: 4px 8px; min-height: 22px; }
+.brightness-window .status { color: alpha(@theme_fg_color, 0.62); font-size: 11px; }
+.brightness-window .error { color: @error_color; }
+.brightness-window .empty { padding: 16px 0; }
 """
 
 
@@ -39,6 +34,7 @@ def label(text, style=None, xalign=0):
     widget = Gtk.Label(label=text, xalign=xalign)
     if style:
         widget.get_style_context().add_class(style)
+    widget.set_valign(Gtk.Align.CENTER)
     return widget
 
 
@@ -67,6 +63,9 @@ class BrightnessApp(Gtk.Application):
         self.updating = False
         self.closed = False
         self.warnings = []
+        self.icon_cache = IconCache()
+        self.icon_path = None
+        self._panel_size = None
         self.launcher = Path(__file__).resolve().parent.parent / "mingdu"
 
     def do_activate(self):
@@ -80,6 +79,7 @@ class BrightnessApp(Gtk.Application):
             "display-brightness-symbolic", AppIndicator.IndicatorCategory.HARDWARE,
         )
         self.indicator.set_title("明度 · 显示器亮度")
+        self.indicator.set_icon_theme_path(self.icon_cache.directory.name)
         self.indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
         self.indicator.connect("scroll-event", self._scroll)
         self._build_menu()
@@ -96,75 +96,114 @@ class BrightnessApp(Gtk.Application):
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self.window = Gtk.ApplicationWindow(application=self, title="明度 · 显示器亮度")
-        self.window.set_default_size(500, 800)
+        self.window = Gtk.ApplicationWindow(application=self, title="明度" + (" · 演示" if self.args.demo else ""))
+        self.window.set_default_size(380, 520)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_icon_name("display-brightness-symbolic")
         self.window.get_style_context().add_class("brightness-window")
         self.window.connect("delete-event", self._hide)
-        header = Gtk.HeaderBar(title="明度", subtitle="BRIGHTNESS" + (" · 演示" if self.args.demo else ""), show_close_button=True)
-        header.set_decoration_layout(":close")
-        self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
-        self.refresh_button.set_tooltip_text("重新检测显示器并读取当前亮度")
-        self.refresh_button.connect("clicked", lambda *_: self.refresh())
-        header.pack_end(self.refresh_button)
-        self.window.set_titlebar(header)
+        self.window.connect("key-press-event", self._key_pressed)
+        self.window.connect("focus-out-event", self._focus_out)
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.window.add(scroll)
-        content = box(True, 18)
-        content.set_border_width(24)
+        content = self.content = box(True, 12)
+        content.set_border_width(18)
+        content.set_size_request(360, -1)
         scroll.add(content)
-        intro = box(True, 7)
-        intro.pack_start(label("让屏幕，刚刚好。", "hero"), False, False, 0)
-        intro.pack_start(label("从顶部状态栏，轻松掌控每一块屏幕。", "muted"), False, False, 0)
-        content.pack_start(intro, False, False, 0)
-        summary = box()
-        summary.pack_start(label("显示器 / DISPLAYS", "eyebrow"), True, True, 0)
-        self.count_label = label("正在检测…", "muted")
-        summary.pack_end(self.count_label, False, False, 0)
-        content.pack_start(summary, False, False, 0)
-        self.monitor_box = box(True, 12)
+        heading = box(spacing=10)
+        icon = Gtk.Image.new_from_icon_name("display-brightness-symbolic", Gtk.IconSize.LARGE_TOOLBAR)
+        icon.set_pixel_size(24)
+        heading.pack_start(icon, False, False, 0)
+        heading.pack_start(label("明度 · 演示" if self.args.demo else "明度", "hero"), True, True, 0)
+        self.count_label = label("检测中", "muted")
+        heading.pack_start(self.count_label, False, False, 0)
+        self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_button.set_tooltip_text("重新检测显示器并读取当前亮度")
+        self.refresh_button.get_accessible().set_name("刷新显示器")
+        self.refresh_button.connect("clicked", lambda *_: self.refresh())
+        heading.pack_end(self.refresh_button, False, False, 0)
+        content.pack_start(heading, False, False, 0)
+        content.pack_start(Gtk.Separator(), False, False, 0)
+        self.monitor_box = box(True, 10)
         content.pack_start(self.monitor_box, False, False, 0)
-        self.presets = box(spacing=8)
-        for title, value in [("夜间 · 25%", 25), ("日常 · 60%", 60), ("明亮 · 100%", 100)]:
-            button = Gtk.Button(label=title)
-            button.get_style_context().add_class("preset")
+        content.pack_start(label("所有屏幕 · 快捷亮度", "muted"), False, False, 0)
+        self.presets = box(spacing=6)
+        self.preset_handlers = []
+        for title, value in [("夜间 25%", 25), ("日常 60%", 60), ("明亮 100%", 100)]:
+            button = Gtk.ToggleButton(label=title)
             button.set_tooltip_text(f"将所有显示器调节到 {value}%")
-            button.connect("clicked", lambda _, v=value: self.set_all(v))
+            handler = button.connect("clicked", lambda _, v=value: self.set_all(v))
+            self.preset_handlers.append((button, value, handler))
             self.presets.pack_start(button, True, True, 0)
         content.pack_start(self.presets, False, False, 0)
-        preferences = box(True, 14)
-        preferences.get_style_context().add_class("card")
+        content.pack_start(Gtk.Separator(), False, False, 0)
         target_row = box()
-        target_row.pack_start(label("状态栏滚轮控制"), True, True, 0)
+        target_row.pack_start(label("状态栏屏幕"), True, True, 0)
         self.target_combo = Gtk.ComboBoxText()
+        self.target_combo.set_tooltip_text("选择圆环显示和托盘滚轮控制的屏幕；滚轮支持取决于桌面环境。")
+        self.target_combo.get_accessible().set_name("状态栏显示与滚轮控制的屏幕")
+        for renderer in self.target_combo.get_cells():
+            renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
+            renderer.set_property("max-width-chars", 16)
         self.target_combo.connect("changed", self._target_changed)
         target_row.pack_end(self.target_combo, False, False, 0)
-        preferences.pack_start(target_row, False, False, 0)
-        start_row = box()
-        start_row.pack_start(label("登录后自动启动"), True, True, 0)
-        self.autostart_switch = Gtk.Switch()
-        self.autostart_switch.set_active(self.settings.autostart)
-        self.autostart_switch.set_sensitive(not self.args.demo)
-        self.autostart_switch.connect("notify::active", self._autostart_switch_changed)
-        start_row.pack_end(self.autostart_switch, False, False, 0)
-        preferences.pack_start(start_row, False, False, 0)
-        content.pack_start(preferences, False, False, 0)
+        content.pack_start(target_row, False, False, 0)
         self.status_label = label("正在连接显示器…", "status")
         self.status_label.set_line_wrap(True)
-        self.status_label.set_max_width_chars(54)
+        self.status_label.set_max_width_chars(36)
+        self.status_label.set_size_request(-1, 30)
         content.pack_start(self.status_label, False, False, 0)
-        self.diagnostics = Gtk.Expander(label="设备诊断与帮助")
+        actions = box(spacing=6)
+        self.diagnostics = Gtk.Expander(label="设备诊断")
         self.diagnostic_text = label("")
         self.diagnostic_text.set_line_wrap(True)
-        self.diagnostic_text.set_max_width_chars(52)
+        self.diagnostic_text.set_max_width_chars(36)
         self.diagnostic_text.set_selectable(True)
-        self.diagnostics.add(self.diagnostic_text)
-        content.pack_start(self.diagnostics, False, False, 0)
-        footer = label("滚轮每次调节 5% · 关闭窗口后仍在状态栏运行", "status")
-        footer.set_line_wrap(True)
+        diagnostic_scroll = Gtk.ScrolledWindow()
+        diagnostic_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        diagnostic_scroll.set_min_content_height(140)
+        diagnostic_scroll.add(self.diagnostic_text)
+        self.diagnostics.add(diagnostic_scroll)
+        self.diagnostics.connect("notify::expanded", lambda *_: GLib.idle_add(self._resize_panel))
+        actions.pack_start(self.diagnostics, True, True, 0)
+        quit_button = Gtk.Button(label="退出")
+        quit_button.set_valign(Gtk.Align.START)
+        quit_button.connect("clicked", self._quit)
+        actions.pack_end(quit_button, False, False, 0)
+        content.pack_start(actions, False, False, 0)
+        content.pack_start(Gtk.Separator(), False, False, 0)
+        footer = box()
+        self.autostart_switch = Gtk.CheckButton(label="登录系统时启动")
+        self.autostart_switch.set_active(self.settings.autostart)
+        self.autostart_switch.set_sensitive(not self.args.demo)
+        self.autostart_switch.connect("toggled", lambda button: self._autostart(button.get_active()))
+        footer.pack_start(self.autostart_switch, True, True, 0)
+        footer.pack_end(label("v" + __version__, "muted"), False, False, 0)
         content.pack_start(footer, False, False, 0)
+
+    def _resize_panel(self):
+        if self.closed:
+            return False
+        _, height = self.content.get_preferred_height_for_width(380)
+        monitor = self.window.get_display().get_primary_monitor()
+        limit = min(720, monitor.get_workarea().height - 40) if monitor else 720
+        size = (380, min(limit, max(340, height)))
+        if size != self._panel_size:
+            self.window.resize(*size)
+            self._panel_size = size
+        return False
+
+    def _key_pressed(self, _, event):
+        if event.keyval == Gdk.KEY_Escape and self.indicator.get_property("connected"):
+            return self._hide()
+        return False
+
+    def _focus_out(self, *_):
+        # Native combo menus must stay usable while they temporarily own the grab.
+        if self.indicator.get_property("connected") and Gtk.grab_get_current() is None:
+            self.window.hide()
+        return False
 
     def _render_displays(self):
         self.updating = True
@@ -182,17 +221,17 @@ class BrightnessApp(Gtk.Application):
             empty.pack_start(hint, False, False, 0)
             self.monitor_box.pack_start(empty, False, False, 0)
         for display in self.displays.values():
-            card = box(True, 12)
+            card = box(True, 6)
             card.get_style_context().add_class("card")
             top = box(spacing=12)
-            top.pack_start(Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.DND), False, False, 0)
-            info = box(True, 5)
+            top.pack_start(Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.LARGE_TOOLBAR), False, False, 0)
+            info = box(True, 2)
             name = label(display.name, "monitor-name")
             name.set_line_wrap(True)
-            name.set_max_width_chars(24)
+            name.set_max_width_chars(20)
             info.pack_start(name, False, False, 0)
-            subtitle = {"backlight": "内置背光", "ddc": "DDC/CI", "demo": "演示设备"}[display.kind]
-            badge = label(subtitle, "badge")
+            subtitle = device_kind(display.kind)
+            badge = label(subtitle, "muted")
             badge.set_halign(Gtk.Align.START)
             info.pack_start(badge, False, False, 0)
             top.pack_start(info, True, True, 0)
@@ -217,7 +256,7 @@ class BrightnessApp(Gtk.Application):
             card.pack_start(controls, False, False, 0)
             self.cards[display.id] = (scale, number, card)
             self.monitor_box.pack_start(card, False, False, 0)
-        self.count_label.set_text(f"{len(self.displays)} 台已连接")
+        self.count_label.set_text(f"{len(self.displays)} 台屏幕")
         self.target_combo.remove_all()
         self.target_combo.append("all", "所有显示器")
         for display in self.displays.values():
@@ -229,6 +268,7 @@ class BrightnessApp(Gtk.Application):
         self._build_menu()
         self._sync_sensitivity()
         self._update_labels()
+        GLib.idle_add(self._resize_panel)
 
     def _menu_item(self, menu, text, callback=None):
         item = Gtk.MenuItem(label=text)
@@ -282,7 +322,22 @@ class BrightnessApp(Gtk.Application):
         self.menu = menu
 
     def show_panel(self):
+        connected = self.indicator.get_property("connected")
+        self.window.set_decorated(not connected)
+        self.window.set_skip_taskbar_hint(connected)
+        self.window.set_type_hint(Gdk.WindowTypeHint.UTILITY if connected else Gdk.WindowTypeHint.NORMAL)
         self.window.show_all()
+        self._resize_panel()
+        if connected:
+            display = self.window.get_display()
+            _, x, y = display.get_default_seat().get_pointer().get_position()
+            monitor = display.get_monitor_at_point(x, y)
+            if monitor:
+                area = monitor.get_workarea()
+                width, height = self.window.get_size()
+                x = max(area.x + 8, min(x - width // 2, area.x + area.width - width - 8))
+                y = area.y + 8 if y < area.y + area.height // 2 else area.y + area.height - height - 8
+                self.window.move(x, max(area.y + 8, y))
         self.window.present()
 
     def _hide(self, *_):
@@ -419,7 +474,6 @@ class BrightnessApp(Gtk.Application):
                 return False
             self.pending.discard(key)
             self.values[key] = self.confirmed[key]
-            self._update_labels()
             if error:
                 self.write_errors[key] = error
                 message = f"{self.displays[key].name} 调节失败：{error}"
@@ -433,6 +487,7 @@ class BrightnessApp(Gtk.Application):
                 self.send_notification("brightness-error", notification)
             elif not self.pending and not self.scanning:
                 self._status("部分显示器调节失败，请查看设备诊断。" if self.write_errors else "亮度已更新", error=bool(self.write_errors))
+            self._update_labels()
         return False
 
     def _update_labels(self):
@@ -445,11 +500,18 @@ class BrightnessApp(Gtk.Application):
             if key in self.menu_displays:
                 self.menu_displays[key].set_label(f"{self.displays[key].name}   {value}%" + (" …" if key in self.pending else ""))
         target = self.target_combo.get_active_id()
-        values = [self.values[target]] if target in self.values else list(self.values.values())
-        text = f"{values[0]}%" if values and len(set(values)) == 1 else (f"{len(values)} 屏" if values else "")
-        if self.args.demo:
-            text = "演示 " + text
-        self.indicator.set_label(text, "100%")
+        self.tray_summary = brightness_summary(self.displays, self.confirmed, target, self.write_errors)
+        path = self.icon_cache.path(self.tray_summary)
+        if path != self.icon_path:
+            self.indicator.set_icon_full(str(path), self.tray_summary.description)
+            self.icon_path = path
+        self.indicator.set_label("演示" if self.args.demo else "", "")
+        self.indicator.set_title("明度 · " + self.tray_summary.description)
+        for button, value, handler in self.preset_handlers:
+            button.handler_block(handler)
+            button.set_active(bool(self.confirmed) and not self.pending and not self.write_errors
+                              and all(v == value for v in self.confirmed.values()))
+            button.handler_unblock(handler)
         self.updating = False
 
     def _diagnostics(self):
@@ -461,10 +523,11 @@ class BrightnessApp(Gtk.Application):
             "首次安装依赖后可能需要注销并重新登录。"
         )
         self.diagnostic_text.set_text("\n\n".join(self.warnings + [help_text]))
-        self.diagnostics.set_expanded(not self.displays or self.args.demo)
+        self.diagnostics.set_expanded(not bool(self.displays))
 
     def _status(self, text, error=False):
-        self.status_label.set_text(text)
+        self.status_label.set_text(("演示 · " if self.args.demo else "") + text)
+        GLib.idle_add(self._resize_panel)
         context = self.status_label.get_style_context()
         (context.add_class if error else context.remove_class)("error")
 
@@ -477,5 +540,6 @@ class BrightnessApp(Gtk.Application):
             self.worker.stop()
         if hasattr(self, "indicator"):
             self.indicator.set_status(AppIndicator.IndicatorStatus.PASSIVE)
+        self.icon_cache.close()
         self.quit()
         return False

@@ -2,6 +2,8 @@
 
 The `Test and build` workflow builds Ubuntu deb, Linux Qt tar.gz, Windows portable ZIP and per-user Inno Setup installer, plus separate macOS arm64/Intel DMGs. The Windows runner needs Inno Setup 6; macOS uses system hdiutil. Build scripts must run on their target OS.
 
+macOS desktop builds also fetch pinned official brightness helper sources, compile them on the target architecture, and package their executables, licenses and exact corresponding source archives. `tools/smoke_bundle.py` verifies the helper architecture and source hashes without touching physical monitors.
+
 1. Update `brightness.__version__`, changelog, README download links, `docs/INSTALL.md` and `docs/RELEASE_NOTES.md`. Preview tags use `v<app version>-preview.<number>`; the installed application and asset filenames use the base app version. Example: app `1.1.0`, tag `v1.1.0-preview.1`.
 2. Run lint and tests, commit and push to main. Tag that reviewed commit and push the tag:
 

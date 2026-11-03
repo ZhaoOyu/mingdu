@@ -3,8 +3,8 @@ from hashlib import sha256
 from pathlib import Path
 import sys
 
-from PySide6.QtCore import QEvent, QLockFile, QObject, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPen, QPixmap
+from PySide6.QtCore import QEvent, QLockFile, QObject, QPoint, Qt, QTimer, Signal, Slot
+from PySide6.QtGui import QCursor, QPalette
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
@@ -16,44 +16,8 @@ from . import __version__
 from .settings import Settings
 from .startup import Startup
 from .worker import HardwareWorker
-
-
-STYLE = """
-QMainWindow, QWidget#content { background: #f5f4f1; color: #272b30; }
-QLabel { color: #272b30; background: transparent; }
-QLabel#hero { font-size: 26px; font-weight: bold; }
-QLabel#muted { color: #6d7177; font-size: 12px; }
-QLabel#eyebrow { color: #a85c24; font-size: 12px; font-weight: bold; }
-QFrame#card { background: white; border: 1px solid #e5e3de; border-radius: 14px; }
-QLabel#monitor { font-size: 15px; font-weight: bold; }
-QLabel#value { color: #b65d27; font-size: 25px; font-weight: bold; }
-QPushButton, QComboBox { background: white; color: #30343a; border: 1px solid #dedcd7; border-radius: 8px; padding: 8px; }
-QPushButton:hover { background: #fff4e8; }
-QPushButton:disabled { color: #999; background: #eeece8; }
-QSlider::groove:horizontal { height: 6px; background: #eae8e3; border-radius: 3px; }
-QSlider::sub-page:horizontal { background: #d78043; border-radius: 3px; }
-QSlider::handle:horizontal { background: white; border: 2px solid #cd743b; width: 16px; margin: -6px 0; border-radius: 9px; }
-QCheckBox { color: #30343a; background: transparent; spacing: 10px; }
-QTextEdit { background: white; color: #30343a; border: 1px solid #dedcd7; border-radius: 8px; padding: 8px; }
-QScrollArea { border: none; background: #f5f4f1; }
-"""
-
-
-def sun_icon():
-    pixmap = QPixmap(64, 64)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setPen(QPen(QColor("#dc8445"), 5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-    painter.drawEllipse(20, 20, 24, 24)
-    for angle in range(0, 360, 45):
-        painter.save()
-        painter.translate(32, 32)
-        painter.rotate(angle)
-        painter.drawLine(0, -23, 0, -28)
-        painter.restore()
-    painter.end()
-    return QIcon(pixmap)
+from .presentation import brightness_summary, device_kind
+from .qt_style import blended_color, brightness_icon, panel_style, symbol_icon
 
 
 class Controller(QObject):
@@ -196,72 +160,98 @@ class Panel(QMainWindow):
         self.controller, self.demo = controller, demo
         self.settings = settings if settings is not None else Settings()
         self.startup = startup if startup is not None else Startup()
-        self.cards, self.device_menus = {}, {}
-        self.quitting = False
-        self.setWindowTitle("明度 Brightness" + (" · 演示" if demo else ""))
-        self.setWindowIcon(sun_icon())
-        self.resize(520, 760)
-        self.setStyleSheet(STYLE)
+        self.cards, self.device_menus, self.device_icons = {}, {}, {}
+        self.quitting = self._applying_theme = self._status_error = False
+        self.popover_mode = QSystemTrayIcon.isSystemTrayAvailable()
+        if self.popover_mode:
+            self.setWindowFlags(Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
+        self.setWindowTitle("明度" + (" · 演示" if demo else ""))
+        self.resize(380, 500)
+        self.setMinimumWidth(360)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         content = QWidget()
         content.setObjectName("content")
         self.layout = QVBoxLayout(content)
-        self.layout.setContentsMargins(24, 24, 24, 24)
-        self.layout.setSpacing(18)
+        self.layout.setContentsMargins(18, 16, 18, 16)
+        self.layout.setSpacing(12)
         scroll.setWidget(content)
         self.setCentralWidget(scroll)
         heading = QHBoxLayout()
-        heading.addWidget(text_label("让屏幕，刚刚好。", "hero"), 1)
-        self.refresh_button = QPushButton("刷新")
+        heading.setSpacing(10)
+        self.header_icon = QLabel()
+        self.header_icon.setFixedSize(24, 24)
+        heading.addWidget(self.header_icon, 0, Qt.AlignmentFlag.AlignVCenter)
+        heading.addWidget(text_label("明度 · 演示" if demo else "明度", "hero"), 1)
+        self.count_label = text_label("检测中", "muted")
+        heading.addWidget(self.count_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.refresh_button = QPushButton()
+        self.refresh_button.setFixedSize(30, 30)
+        self.refresh_button.setToolTip("重新检测显示器并读取当前亮度")
+        self.refresh_button.setAccessibleName("刷新显示器")
         self.refresh_button.clicked.connect(controller.refresh)
         heading.addWidget(self.refresh_button)
         self.layout.addLayout(heading)
-        self.layout.addWidget(text_label("从状态栏，轻松掌控每一块屏幕。", "muted"))
-        self.count_label = text_label("显示器 / DISPLAYS", "eyebrow")
-        self.layout.addWidget(self.count_label)
+        self.separator()
         self.devices = QWidget()
         self.devices_layout = QVBoxLayout(self.devices)
         self.devices_layout.setContentsMargins(0, 0, 0, 0)
-        self.devices_layout.setSpacing(12)
+        self.devices_layout.setSpacing(10)
         self.layout.addWidget(self.devices)
+        self.layout.addWidget(text_label("所有屏幕 · 快捷亮度", "muted"))
         presets = QHBoxLayout()
+        presets.setSpacing(6)
         self.preset_buttons = []
-        for title, value in [("夜间 · 25%", 25), ("日常 · 60%", 60), ("明亮 · 100%", 100)]:
+        for title, value in [("夜间 25%", 25), ("日常 60%", 60), ("明亮 100%", 100)]:
             button = QPushButton(title)
+            button.setCheckable(True)
+            button.setToolTip(f"将所有显示器调节到 {value}%")
             button.clicked.connect(lambda _checked=False, v=value: controller.set_all(v))
-            presets.addWidget(button)
+            presets.addWidget(button, 1)
             self.preset_buttons.append(button)
         self.layout.addLayout(presets)
+        self.separator()
         self.target = QComboBox()
-        self.target.setAccessibleName("状态栏滚轮控制的显示器")
+        self.target.setMinimumWidth(150)
+        self.target.setMaximumWidth(220)
+        self.target.setAccessibleName("状态栏显示与滚轮控制的屏幕")
+        self.target.setToolTip("选择圆环显示和托盘滚轮控制的屏幕；滚轮支持取决于桌面环境。")
         self.target.currentIndexChanged.connect(self._target_changed)
         target_row = QHBoxLayout()
-        target_row.addWidget(text_label("滚轮控制（托盘宿主支持时）", "muted"))
-        target_row.addWidget(self.target, 1)
+        target_row.addWidget(text_label("状态栏屏幕"), 1)
+        target_row.addWidget(self.target)
         self.layout.addLayout(target_row)
-        self.autostart = QCheckBox("登录后自动启动")
+        self.status_label = text_label("正在连接显示器…", "muted")
+        self.status_label.setMinimumHeight(30)
+        self.layout.addWidget(self.status_label)
+        actions = QHBoxLayout()
+        self.diagnostic_button = QPushButton("设备诊断 ▸")
+        self.diagnostic_button.setCheckable(True)
+        self.diagnostic_button.toggled.connect(self._toggle_diagnostics)
+        actions.addWidget(self.diagnostic_button, 1)
+        quit_button = QPushButton("退出")
+        quit_button.clicked.connect(self.quit)
+        actions.addWidget(quit_button)
+        self.layout.addLayout(actions)
+        self.diagnostics = QTextEdit()
+        self.diagnostics.setReadOnly(True)
+        self.diagnostics.setFixedHeight(140)
+        self.diagnostics.hide()
+        self.layout.addWidget(self.diagnostics)
+        self.separator()
+        footer = QHBoxLayout()
+        self.autostart = QCheckBox("登录系统时启动")
         self.autostart.setEnabled(not demo)
         try:
             self.autostart.setChecked(self.startup.enabled)
         except OSError:
             pass
         self.autostart.toggled.connect(self._set_autostart)
-        self.layout.addWidget(self.autostart)
-        self.status_label = text_label("正在连接显示器…", "muted")
-        self.layout.addWidget(self.status_label)
-        self.diagnostic_button = QPushButton("设备信息与诊断 ▸")
-        self.diagnostic_button.setCheckable(True)
-        self.diagnostic_button.toggled.connect(self._toggle_diagnostics)
-        self.layout.addWidget(self.diagnostic_button)
-        self.diagnostics = QTextEdit()
-        self.diagnostics.setReadOnly(True)
-        self.diagnostics.setMinimumHeight(140)
-        self.diagnostics.hide()
-        self.layout.addWidget(self.diagnostics)
-        self.layout.addWidget(text_label(f"明度 {__version__} · MIT 开源软件" + (" · 模拟设备，不改变真实亮度" if demo else ""), "muted"))
-        self.layout.addStretch()
-        self.tray = TrayIcon(sun_icon(), self)
+        footer.addWidget(self.autostart, 1)
+        footer.addWidget(text_label("v" + __version__, "muted"))
+        self.layout.addLayout(footer)
+        self.tray = TrayIcon(symbol_icon(), self)
         self.tray.activated.connect(self._activated)
         self.tray.scrolled.connect(self._scroll)
         self.tray.messageClicked.connect(self.show_panel)
@@ -271,7 +261,65 @@ class Panel(QMainWindow):
         controller.status.connect(self._status)
         controller.failure.connect(self._notify_error)
         self._build_menu()
+        self._apply_theme()
         self.update_values()
+
+    def separator(self):
+        line = QFrame()
+        line.setObjectName("separator")
+        line.setFixedHeight(1)
+        self.layout.addWidget(line)
+
+    def _fit_panel(self):
+        if self.quitting:
+            return
+        self.layout.invalidate()
+        self.layout.activate()
+        height = self.layout.totalHeightForWidth(self.width())
+        if height <= 0:
+            height = self.layout.sizeHint().height()
+        screen = self.screen()
+        limit = min(720, screen.availableGeometry().height() - 40) if screen else 720
+        self.resize(self.width(), min(limit, max(340, height + 4)))
+
+    def _apply_theme(self):
+        if self._applying_theme:
+            return
+        self._applying_theme = True
+        try:
+            palette = QApplication.palette()
+            self.setStyleSheet(panel_style(palette))
+            self.header_icon.setPixmap(symbol_icon().pixmap(24, 24))
+            self.refresh_button.setIcon(symbol_icon("refresh"))
+            self.setWindowIcon(symbol_icon())
+            for icon in self.device_icons.values():
+                icon.setPixmap(symbol_icon("monitor", blended_color(palette, 0.62)).pixmap(24, 24))
+            self._status(self.status_label.text(), self._status_error)
+            self._update_tray()
+        finally:
+            self._applying_theme = False
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.ApplicationPaletteChange and hasattr(self, "tray"):
+            self._apply_theme()
+
+    def event(self, event):
+        if event.type() == QEvent.Type.WindowDeactivate and getattr(self, "popover_mode", False):
+            QTimer.singleShot(0, self._hide_if_inactive)
+        return super().event(event)
+
+    def _hide_if_inactive(self):
+        if (self.popover_mode and not self.isActiveWindow() and not QApplication.activePopupWidget()
+                and not QApplication.activeModalWidget()):
+            self.hide()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape and QSystemTrayIcon.isSystemTrayAvailable():
+            self.hide()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
     def _build_menu(self):
         old_menu = getattr(self, "menu", None)
@@ -300,7 +348,7 @@ class Panel(QMainWindow):
         self.menu.addSeparator()
         self.refresh_action = self.menu.addAction("重新检测显示器", self.controller.refresh)
         self.menu.addAction("退出明度", self.quit)
-        self.tray.setContextMenu(self.menu)
+        self.tray.setContextMenu(None if sys.platform == "darwin" else self.menu)
         if old_menu:
             old_menu.deleteLater()
 
@@ -309,26 +357,36 @@ class Panel(QMainWindow):
             item = self.devices_layout.takeAt(0)
             item.widget().deleteLater()
         self.cards.clear()
+        self.device_icons.clear()
         for device in self.controller.displays.values():
             card = QFrame()
             card.setObjectName("card")
             layout = QVBoxLayout(card)
-            layout.setContentsMargins(18, 18, 18, 18)
+            layout.setContentsMargins(0, 2, 0, 12)
+            layout.setSpacing(6)
             heading = QHBoxLayout()
+            heading.setSpacing(12)
+            icon = QLabel()
+            icon.setFixedSize(24, 24)
+            heading.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
+            self.device_icons[device.id] = icon
             title = QVBoxLayout()
+            title.setSpacing(2)
             title.addWidget(text_label(device.name, "monitor"))
-            kind = {"backlight": "Linux 内置背光", "ddc": "DDC/CI · Linux", "wmi": "Windows 内置背光",
-                    "win-ddc": "DDC/CI · Windows", "apple": "Apple 背光", "m1ddc": "DDC/CI · Apple Silicon",
-                    "ddcctl": "DDC/CI · Intel Mac", "demo": "演示设备"}.get(device.kind, device.kind)
-            title.addWidget(text_label(kind, "muted"))
+            title.addWidget(text_label(device_kind(device.kind), "muted"))
             heading.addLayout(title, 1)
             value_label = text_label(f"{device.value}%", "value")
-            heading.addWidget(value_label)
+            value_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            value_label.setMinimumWidth(60)
+            heading.addWidget(value_label, 0, Qt.AlignmentFlag.AlignVCenter)
             layout.addLayout(heading)
             row = QHBoxLayout()
+            row.setSpacing(6)
             minus, plus = QPushButton("−"), QPushButton("+")
-            minus.setFixedWidth(40)
-            plus.setFixedWidth(40)
+            for button, text in ((minus, "降低 5%"), (plus, "提高 5%")):
+                button.setFixedWidth(30)
+                button.setToolTip(text)
+                button.setAccessibleName(device.name + "：" + text)
             minus.clicked.connect(lambda _checked=False, key=device.id: self.controller.adjust(key, -5))
             plus.clicked.connect(lambda _checked=False, key=device.id: self.controller.adjust(key, 5))
             slider = QSlider(Qt.Orientation.Horizontal)
@@ -344,8 +402,8 @@ class Panel(QMainWindow):
             self.devices_layout.addWidget(card)
             self.cards[device.id] = (slider, value_label)
         if not self.cards:
-            self.devices_layout.addWidget(text_label("未发现可调节设备。\n检查连接、驱动或 DDC/CI 设置后点击刷新。"))
-        self.count_label.setText(f"显示器 / DISPLAYS · {len(self.cards)} 台")
+            self.devices_layout.addWidget(text_label("未发现可调节的显示器。\n检查连接并开启 DDC/CI，再点击刷新。"))
+        self.count_label.setText(f"{len(self.cards)} 台屏幕")
         self.target.blockSignals(True)
         self.target.clear()
         self.target.addItem("所有显示器", "all")
@@ -356,6 +414,18 @@ class Panel(QMainWindow):
         self.target.blockSignals(False)
         self.diagnostic_button.setChecked(not bool(self.cards))
         self._build_menu()
+        self._apply_theme()
+        QTimer.singleShot(0, self._fit_panel)
+
+    def _update_tray(self):
+        controller = self.controller
+        self.tray_summary = brightness_summary(controller.displays, controller.confirmed,
+                                               self.target.currentData(), controller.errors)
+        self.tray.setIcon(brightness_icon(self.tray_summary))
+        values = "\n".join(f"{controller.displays[key].name}: {value}%" for key, value in controller.confirmed.items()
+                           if key in controller.displays)
+        self.tray.setToolTip(("明度 · 演示\n" if self.demo else "明度\n")
+                            + self.tray_summary.description + ("\n" + values if values else ""))
 
     def update_values(self):
         controller = self.controller
@@ -370,23 +440,26 @@ class Panel(QMainWindow):
                 self.device_menus[key].setTitle(f"{controller.displays[key].name}   {value}%" + (" …" if key in controller.pending else ""))
         self.devices.setEnabled(not controller.scanning)
         enabled = bool(controller.displays) and not controller.scanning
-        for button in self.preset_buttons:
+        for button, value in zip(self.preset_buttons, (25, 60, 100)):
             button.setEnabled(enabled)
+            button.setChecked(bool(controller.confirmed) and not controller.pending and not controller.errors
+                              and all(v == value for v in controller.confirmed.values()))
         for action in self.control_actions:
             action.setEnabled(enabled)
         self.refresh_action.setEnabled(not controller.scanning)
         self.refresh_button.setEnabled(not controller.scanning)
-        tooltip = "\n".join(f"{controller.displays[key].name}: {value}%" for key, value in controller.values.items())
-        self.tray.setToolTip(("明度 · 演示\n" if self.demo else "明度\n") + (tooltip or "未发现设备"))
+        self._update_tray()
         devices = [f"{d.name} · {d.kind} · 最大原始值 {d.maximum}" for d in controller.displays.values()]
-        help_text = "连接或唤醒显示器后请刷新。外接显示器需开启 DDC/CI。\nmacOS 需安装相应硬件辅助工具；详见 README。"
+        help_text = "连接或唤醒显示器后请刷新。外接显示器需开启 DDC/CI。\n新版 macOS 安装包自带辅助工具；源码运行请参阅安装指南。"
         self.diagnostics.setPlainText("\n\n".join(devices + controller.warnings + [help_text]))
 
     def _toggle_diagnostics(self, enabled):
         self.diagnostics.setVisible(enabled)
-        self.diagnostic_button.setText("设备信息与诊断 ▾" if enabled else "设备信息与诊断 ▸")
+        self.diagnostic_button.setText("设备诊断 ▾" if enabled else "设备诊断 ▸")
+        QTimer.singleShot(0, self._fit_panel)
 
     def _target_changed(self, _index):
+        self._update_tray()
         self.settings.data["scroll_target"] = self.target.currentData() or "all"
         if not self.demo:
             try:
@@ -413,18 +486,39 @@ class Panel(QMainWindow):
             self.controller.adjust_all(delta)
 
     def _status(self, message, error):
-        self.status_label.setText(message)
-        self.status_label.setStyleSheet("color: #b23c28;" if error else "color: #6d7177;")
+        self._status_error = error
+        self.status_label.setText(("演示 · " if self.demo else "") + message.removeprefix("演示 · "))
+        dark = QApplication.palette().color(QPalette.ColorRole.Window).lightness() < 128
+        color = ("#ff938c" if dark else "#b3261e") if error else blended_color(QApplication.palette(), 0.62).name()
+        self.status_label.setStyleSheet(f"color: {color};")
+        QTimer.singleShot(0, self._fit_panel)
 
     def _notify_error(self, message):
         self.tray.showMessage("明度：亮度调节失败", message[:240], QSystemTrayIcon.MessageIcon.Warning)
 
     def _activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Context and sys.platform == "darwin":
+            self.menu.popup(QCursor.pos())
+            return
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick,
                       QSystemTrayIcon.ActivationReason.MiddleClick):
-            self.show_panel()
+            if self.isVisible() and self.popover_mode:
+                self.hide()
+            else:
+                self.show_panel()
 
     def show_panel(self):
+        self._fit_panel()
+        if self.popover_mode:
+            tray_rect = self.tray.geometry()
+            anchor = tray_rect.center() if tray_rect.isValid() else QCursor.pos()
+            screen = QApplication.screenAt(anchor) or self.screen()
+            area = screen.availableGeometry()
+            x = max(area.left() + 8, min(anchor.x() - self.width() // 2, area.right() - self.width() - 8))
+            below = anchor.y() < area.center().y()
+            y = (tray_rect.bottom() + 6 if tray_rect.isValid() else area.top() + 6) if below else anchor.y() - self.height() - 12
+            y = max(area.top() + 6, min(y, area.bottom() - self.height() - 6))
+            self.move(QPoint(x, y))
         self.showNormal()
         self.raise_()
         self.activateWindow()
@@ -503,7 +597,7 @@ def run(hardware, args):
     panel = Panel(controller, args.demo, settings=settings)
     instance.activate_on_connection(panel)
     if not args.background or not QSystemTrayIcon.isSystemTrayAvailable():
-        panel.show()
+        panel.show_panel()
     QTimer.singleShot(0, controller.refresh)
     # Some tray hosts become available only after login finishes.
     QTimer.singleShot(4000, lambda: panel.show() if not QSystemTrayIcon.isSystemTrayAvailable() else None)

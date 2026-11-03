@@ -40,7 +40,7 @@ def build():
         control.write_text(
             f"Package: mingdu\nVersion: {__version__}\nSection: utils\nPriority: optional\n"
             "Architecture: all\nMaintainer: Mingdu Contributors <maintainers@example.invalid>\n"
-            "Depends: python3 (>= 3.10), python3-gi, gir1.2-gtk-3.0, gir1.2-ayatanaappindicator3-0.1, libglib2.0-bin\n"
+            "Depends: python3 (>= 3.10), python3-gi, python3-cairo, librsvg2-common, gir1.2-gtk-3.0, gir1.2-ayatanaappindicator3-0.1, libglib2.0-bin\n"
             "Recommends: ddcutil, gnome-shell-extension-appindicator\n"
             "Description: Native display brightness panel and status indicator\n"
             " Adjust internal backlights and DDC/CI monitors from the Ubuntu panel.\n"

@@ -13,6 +13,9 @@ from brightness import __version__
 
 
 def build():
+    if sys.platform == "darwin":
+        from tools.build_macos_helpers import build_helpers
+        build_helpers()
     subprocess.run([
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
         "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build/pyinstaller"),

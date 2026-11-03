@@ -55,6 +55,11 @@ jobs:
         run: python tests/qt_smoke.py
       - name: Qt single-instance process test (demo only)
         run: python tests/qt_instance_smoke.py
+      - name: Native AppKit integration and activation (demo only)
+        if: runner.os == 'macOS'
+        run: |
+          python tests/native_smoke.py
+          python tests/qt_instance_smoke.py --native
       - name: Build wheel and source distribution
         run: python -m build
       - name: Build native desktop archive
@@ -95,7 +100,7 @@ jobs:
       - name: Install native GTK test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 xvfb xauth dbus-x11 desktop-file-utils
+          sudo apt-get install -y python3-gi python3-cairo librsvg2-common gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 xvfb xauth dbus-x11 desktop-file-utils
       - name: Test GTK and build deb
         run: |
           /usr/bin/python3 -m unittest discover -s tests -v

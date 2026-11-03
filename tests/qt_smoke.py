@@ -30,11 +30,13 @@ def main():
     app = QApplication([])
     app.setQuitOnLastWindowClosed(False)
     class Hardware(DemoHardware):
+        writes = 0
         fail = False
         empty = False
         def discover(self):
             return ScanResult([], ["测试：无设备"]) if self.empty else super().discover()
         def set_brightness(self, display, value):
+            self.writes += 1
             if self.fail:
                 raise HardwareError("测试：设备断开")
             return super().set_brightness(display, value)
@@ -47,11 +49,17 @@ def main():
         try:
             controller.refresh()
             settle(lambda: not controller.scanning and len(controller.displays) == 2)
+            assert hardware.writes == 0  # Opening and rendering never change brightness.
+            assert panel.tray_summary.text == "≠"
             first, second = list(controller.displays)
+            panel.target.setCurrentIndex(panel.target.findData(first))
+            assert panel.tray_summary.value == 65
             slider = panel.cards[first][0]
             for value in (40, 41, 42, 43):
                 slider.setValue(value)
+            assert panel.tray_summary.value == 65  # Debounced target is not confirmed.
             settle(lambda: not controller.pending)
+            assert panel.tray_summary.value == 43
             assert hardware.values[first] == 43
             assert hardware.values[second] == 80
             # QAction's checked bool must not overwrite the captured display ID.
@@ -65,11 +73,14 @@ def main():
             panel.preset_buttons[0].click()
             settle(lambda: not controller.pending)
             assert set(hardware.values.values()) == {25}
+            assert [b.isChecked() for b in panel.preset_buttons] == [True, False, False]
             hardware.fail = True
             controller.request(first, 90)
             settle(lambda: not controller.pending)
             assert controller.values[first] == 25 and controller.errors
             assert "失败" in panel.status_label.text()
+            assert panel.tray_summary.text == "!"
+            assert not any(b.isChecked() for b in panel.preset_buttons)
             hardware.fail = False
             controller.request(first, 65)
             controller.request(second, 80)
@@ -85,7 +96,8 @@ def main():
             assert controller.values[first] == 70
             settle(lambda: not controller.pending)
             assert controller.values[first] == 70
-            panel.resize(520, 820)
+            panel._fit_panel()
+            assert panel.width() == 380 and panel.height() <= 720
             QApplication.processEvents()
             (ROOT / "dist").mkdir(exist_ok=True)
             assert panel.grab().save(str(ROOT / "dist/qt-preview.png"))

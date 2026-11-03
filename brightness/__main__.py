@@ -16,7 +16,7 @@ def main():
     parser.add_argument("--background", action="store_true", help="启动时仅显示状态栏图标")
     parser.add_argument("--demo", action="store_true", help="模拟双屏，不改变真实硬件")
     parser.add_argument("--diagnose", action="store_true", help="输出设备检测 JSON，不启动界面")
-    parser.add_argument("--ui", choices=("auto", "qt", "gtk"), default="auto", help="自动选择 Qt 或 Ubuntu GTK 界面")
+    parser.add_argument("--ui", choices=("auto", "native", "qt", "gtk"), default="auto", help="自动选择 macOS AppKit、Qt 或 Ubuntu GTK 界面")
     args = parser.parse_args()
     try:
         hardware = create_hardware(args.demo)
@@ -27,6 +27,16 @@ def main():
         result = hardware.discover()
         print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
         return 0 if result.displays else 1
+    if args.ui == "native" or (sys.platform == "darwin" and args.ui == "auto"):
+        if sys.platform != "darwin":
+            print("原生 AppKit 界面仅用于 macOS。", file=sys.stderr)
+            return 1
+        try:
+            from .macos_app import run
+        except ImportError as exc:
+            print(f"无法加载 AppKit：{exc}\n请安装项目的 macOS 依赖：python -m pip install .", file=sys.stderr)
+            return 1
+        return run(hardware, args)
     use_qt = args.ui == "qt" or (args.ui == "auto" and (
         getattr(sys, "frozen", False) or not sys.platform.startswith("linux") or importlib.util.find_spec("PySide6") is not None))
     if use_qt:
@@ -46,7 +56,7 @@ def main():
     try:
         from .app import BrightnessApp
     except (ImportError, ValueError) as exc:
-        print(f"无法加载桌面组件：{exc}\n请安装：sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1", file=sys.stderr)
+        print(f"无法加载桌面组件：{exc}\n请安装：sudo apt install python3-gi python3-cairo librsvg2-common gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1", file=sys.stderr)
         return 1
     from gi.repository import Gtk
     if not Gtk.init_check()[0]:

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Brightness indicators now use an upper progress arc, central number and bottom sun across macOS, Qt and GTK.
+- User-focused Chinese/English README with native UI highlights and clear preview download status.
+
+- macOS now defaults to a real AppKit NSPopover with system material, SF Symbols, native sliders/buttons and light/dark appearance; the Mac bundle no longer contains Qt.
+- AppKit hardware controller preserves debounce, confirmed-value rings, read-only startup and failure rollback; repeated launches activate the existing native panel.
+
+- macOS bundles include architecture-specific brightness helpers; no Homebrew or first-launch download required. Fixed upstream revisions, matching source archives and license notices ship together.
+- macOS About/Finder version metadata now matches the application version.
+
+- Compact system-themed Qt and GTK panels with aligned monitor rows and horizontal brightness presets.
+- Bold tray brightness ring with confirmed values, per-screen selection, mixed-brightness and failure indicators.
+- Tray-anchored Qt panel, dismiss-on-focus-loss behavior and keyboard dismissal; regular-window fallback without a tray host.
+- GTK symbolic SVG icons with font outlines; deb now includes Cairo and the SVG loader.
+
 ## 1.1.0 — 2026-10-27 (Preview 1)
 
 - Native Windows installer, macOS DMGs, gated GitHub prereleases and SHA-256 checksums.
