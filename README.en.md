@@ -4,6 +4,10 @@ Turn down your external monitor while leaving your laptop screen just as it is. 
 
 **[Download the 1.2.1 preview](#download)** · [简体中文](README.md)
 
+<img src="docs/menubar-121.png" width="270" alt="Menu bar sun rings showing 25%, 60%, and 100% brightness">
+
+The number above the sun is the brightness percentage. The arc fills as the screen gets brighter.
+
 <img src="docs/mingdu-panel-121.png" width="360" alt="Mingdu on Mac showing two display sliders and three brightness presets">
 
 - **Fine-tune one screen.** On Mac, drag to any whole percentage from 1% to 100%. Focus the slider and use the arrow keys for 1% adjustments.
