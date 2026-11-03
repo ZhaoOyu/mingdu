@@ -28,3 +28,8 @@ Mac 用户打开 DMG，将 Mingdu 拖入「应用程序」即可，亮度辅助�
 [安装与常见问题](docs/INSTALL.md) · [反馈显示器兼容性](https://github.com/ZhaoOyu/mingdu/issues)
 
 应用默认跟随系统语言。在面板底部打开「语言」，可随时选择「简体中文」或「English」。
+
+## 更多菜单栏工具
+
+- [风度](https://github.com/ZhaoOyu/fengdu) · 在配有风扇的 Apple 芯片 Mac 上查看芯片温度和风扇转速，手动指定转速或设置随温度提速的曲线。
+- [Codex 余量](https://github.com/ZhaoOyu/codex-quota-bar) · 在 Mac 菜单栏或 Ubuntu 顶栏查看五小时和每周的 Codex 剩余额度，以及距离下次重置还有多久。

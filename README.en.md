@@ -26,3 +26,8 @@ On Mac, open the DMG and drag Mingdu into Applications. The display tools are in
 [Installation guide](docs/INSTALL.md#english-quick-start) · [Report a display compatibility issue](https://github.com/ZhaoOyu/mingdu/issues)
 
 The interface follows your system language by default. Open **Language** at the bottom of the panel to switch to **简体中文** or **English**.
+
+## More menu bar apps
+
+- [Fengdu](https://github.com/ZhaoOyu/fengdu/blob/main/README.en.md) · Monitor chip temperature and fan speeds on an Apple Silicon Mac with a fan. Set a target RPM or choose a fan curve that responds to temperature.
+- [Codex Quota Bar](https://github.com/ZhaoOyu/codex-quota-bar/blob/main/README.en.md) · Track your five-hour and weekly Codex quotas in the Mac menu bar or Ubuntu top panel, and see how long until each resets.
