@@ -3,14 +3,15 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from brightness import __version__
 from tools.prepare_release import prepare
 
 
 class ReleaseTests(unittest.TestCase):
     def make_artifacts(self, root):
-        names = ['mingdu_1.1.0_all.deb', 'mingdu-1.1.0-linux-x86_64.tar.gz',
-                 'mingdu-1.1.0-windows-x86_64-setup.exe', 'mingdu-1.1.0-windows-x86_64.zip',
-                 'mingdu-1.1.0-macos-arm64.dmg', 'mingdu-1.1.0-macos-x86_64.dmg']
+        names = [f'mingdu_{__version__}_all.deb', f'mingdu-{__version__}-linux-x86_64.tar.gz',
+                 f'mingdu-{__version__}-windows-x86_64-setup.exe', f'mingdu-{__version__}-windows-x86_64.zip',
+                 f'mingdu-{__version__}-macos-arm64.dmg', f'mingdu-{__version__}-macos-x86_64.dmg']
         for index, name in enumerate(names):
             directory = root / str(index)
             directory.mkdir(parents=True)
@@ -22,7 +23,7 @@ class ReleaseTests(unittest.TestCase):
             root = Path(directory)
             names = self.make_artifacts(root / 'input')
             output = root / 'output'
-            prepare(root / 'input', output, 'v1.1.0-preview.1')
+            prepare(root / 'input', output, f'v{__version__}-preview.1')
             self.assertEqual({p.name for p in output.iterdir()}, set(names + ['INSTALL.md', 'SHA256SUMS.txt']))
             for line in (output / 'SHA256SUMS.txt').read_text().splitlines():
                 digest, name = line.split('  ')
@@ -34,7 +35,7 @@ class ReleaseTests(unittest.TestCase):
                 root = Path(directory)
                 names = self.make_artifacts(root / 'input')
                 first = root / 'input/0' / names[0]
-                tag = 'v1.1.0-preview.1'
+                tag = f'v{__version__}-preview.1'
                 if failure == 'missing':
                     first.unlink()
                 elif failure == 'duplicate':

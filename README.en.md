@@ -8,7 +8,7 @@ Free, open source, and local. Available for **macOS, Windows, and Ubuntu**.
 
 [Download](#download) · [Installation guide](docs/INSTALL.md#english-quick-start) · [Report an issue](https://github.com/ZhaoOyu/mingdu/issues) · [简体中文](README.md)
 
-> **The redesigned version is on the main branch; its installers are not released yet.** The native Mac panel, sun-shaped brightness ring and bundled helpers below are upcoming features. Published **1.1.0 Preview 1** still has the older interface and requires manual Mac helper setup.
+> **1.2.0 Preview 1 brings a native Mac panel and a sun-shaped brightness ring.** Mac helpers are bundled—no Homebrew needed. Windows and Ubuntu share the refreshed compact layout.
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/preview-dark.png"><img src="docs/preview.png" width="366" alt="Native Mac brightness panel with separate display sliders, presets and tray display selection"></picture></p>
 <p align="center"><sub>Native control preview with simulated monitors. System translucency and shadows appear in the running app. The UI is Chinese. <a href="docs/preview-gtk.png">Ubuntu preview</a></sub></p>
@@ -21,7 +21,7 @@ Free, open source, and local. Available for **macOS, Windows, and Ubuntu**.
 - **Brightness at a glance.** An upper progress arc, a bold number and a sun below form the tray indicator. Choose the display to track; readings reflect confirmed hardware values.
 - **A comfortable setting for every screen.** Adjust built-in and external monitors independently, or change them together.
 - **One-click lighting presets.** Night 25%, Everyday 60%, and Bright 100% apply to all displays.
-- **New Mac builds are ready after installation.** Brightness helpers ship inside the app. No Homebrew or first-launch downloads. External monitors must still support and enable DDC/CI.
+- **Ready after installation on Mac.** Brightness helpers ship inside the app. No Homebrew or first-launch downloads. External monitors must still support and enable DDC/CI.
 - **Keeps your existing settings.** Startup only reads brightness. Login startup is optional. Failed changes show an error and return the displayed value to its last confirmed reading.
 - **Your display information stays local.** No account, telemetry, or uploads.
 
@@ -29,14 +29,14 @@ Mingdu controls system backlights and monitor hardware brightness rather than pl
 
 ## Download
 
-**Available now: 1.1.0 Preview 1**, an early preview that does not contain the redesign above.
+**Current version: 1.2.0 Preview 1**, including the redesigned interface and sun-shaped brightness ring shown above. Try it and share your display compatibility feedback.
 
 | System | Download | Installation |
 |---|---|---|
-| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.1.0-preview.1/mingdu-1.1.0-macos-arm64.dmg) | Drag to Applications; this older preview needs helper setup |
-| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.1.0-preview.1/mingdu-1.1.0-macos-x86_64.dmg) | Drag to Applications; this older preview needs helper setup |
-| Windows 10 / 11 · x64 | [Installer](https://github.com/ZhaoOyu/mingdu/releases/download/v1.1.0-preview.1/mingdu-1.1.0-windows-x86_64-setup.exe) | Double-click; no separate Python installation |
-| Ubuntu 22.04 / 24.04 / 26.04 | [DEB package](https://github.com/ZhaoOyu/mingdu/releases/download/v1.1.0-preview.1/mingdu_1.1.0_all.deb) | Install using apt to resolve system dependencies |
+| macOS 15+ · Apple Silicon | [arm64 DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-arm64.dmg) | Drag to Applications; helpers are included |
+| macOS 15+ · Intel | [Intel DMG](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-macos-x86_64.dmg) | Drag to Applications; helpers are included |
+| Windows 10 / 11 · x64 | [Installer](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu-1.2.0-windows-x86_64-setup.exe) | Double-click; no separate Python installation |
+| Ubuntu 22.04 / 24.04 / 26.04 | [DEB package](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.0-preview.1/mingdu_1.2.0_all.deb) | Install using apt to resolve system dependencies |
 
 [All downloads and checksums](https://github.com/ZhaoOyu/mingdu/releases) · [Installation instructions](docs/INSTALL.md)
 

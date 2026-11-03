@@ -1,14 +1,14 @@
 # 明度安装指南 / Installation
 
-适用于 1.1.0 Preview 1。安装包来自 [GitHub Releases](https://github.com/ZhaoOyu/mingdu/releases/tag/v1.1.0-preview.1)，下载不需要登录 GitHub。预览版仍在收集真实显示器兼容性反馈。
+适用于 1.2.0 Preview 1。安装包来自 [GitHub Releases](https://github.com/ZhaoOyu/mingdu/releases/tag/v1.2.0-preview.1)，下载不需要登录 GitHub。预览版仍在收集真实显示器兼容性反馈。
 
 ## Ubuntu
 
-推荐 Ubuntu 22.04 / 24.04 / 26.04 使用 `mingdu_1.1.0_all.deb`。在下载目录执行：
+推荐 Ubuntu 22.04 / 24.04 / 26.04 使用 `mingdu_1.2.0_all.deb`。在下载目录执行：
 
 ```sh
 sudo apt update
-sudo apt install ./mingdu_1.1.0_all.deb
+sudo apt install ./mingdu_1.2.0_all.deb
 mingdu
 ```
 
@@ -24,7 +24,7 @@ sudo apt install ddcutil gnome-shell-extension-appindicator
 
 ### Linux Qt 便携包
 
-x86_64 系统可下载 `mingdu-1.1.0-linux-x86_64.tar.gz`，解压完整目录后运行 `Mingdu/Mingdu`。内置 Python 与 Qt，无需 pip；仍需系统桌面服务、外接屏幕的 ddcutil，以及 Qt 的系统运行库：
+x86_64 系统可下载 `mingdu-1.2.0-linux-x86_64.tar.gz`，解压完整目录后运行 `Mingdu/Mingdu`。内置 Python 与 Qt，无需 pip；仍需系统桌面服务、外接屏幕的 ddcutil，以及 Qt 的系统运行库：
 
 ```sh
 sudo apt install libegl1 libopengl0 libxcb-cursor0 libxkbcommon-x11-0 ddcutil
@@ -34,22 +34,14 @@ GNOME 仍需托盘扩展。建议优先使用 deb；不要同时启动 GTK 和 Q
 
 ## macOS
 
-**新版（尚未发布）使用原生 AppKit 弹出面板，并已内置辅助工具：** Apple Silicon 包含 `brightness` 与 `m1ddc`，Intel 包含 `brightness` 与 `ddcctl`。拖入 Applications 即可使用，无需 Homebrew、管理员权限或首次启动下载。工具仅在应用内部运行，不写入系统工具目录；卸载应用时一并移除。下方手动安装步骤仅适用于已发布的 Preview 1 和源码运行。
+**1.2.0 使用原生 macOS 面板，并已内置辅助工具。** Apple Silicon 包含 `brightness` 与 `m1ddc`，Intel 包含 `brightness` 与 `ddcctl`。工具及对应源码、许可证随应用一起提供，不写入系统工具目录；卸载应用时一并移除。
 
 1. 在“关于本机”查看芯片：Apple M 系列下载 `arm64.dmg`；Intel 下载 `x86_64.dmg`。预构建包要求 **macOS 15 或更高版本**。
-2. 打开 DMG，将 `Mingdu.app` 拖到 `Applications`，然后弹出磁盘映像。
-3. 新版测试包使用 macOS 原生 AppKit 界面，已包含 Python 和硬件辅助工具。使用旧版 Preview 1 或源码时，按下方说明安装辅助工具。
-4. 从“应用程序”启动明度，在菜单栏图标中打开面板。
+2. 打开 DMG，将 `Mingdu.app` 拖到 `Applications`，然后弹出磁盘映像。升级时先退出旧版，再替换应用。
+3. 从“应用程序”启动明度，点击菜单栏的太阳圆环打开面板。无需安装 Python、Homebrew 或另外下载亮度工具。
+4. 外接显示器需支持并开启 DDC/CI。若未识别，展开“设备诊断”查看提示。
 
-旧版 Preview 1 或源码运行，可通过 [Homebrew](https://brew.sh/) 按需安装工具：
-
-```sh
-brew install brightness  # 内置屏幕及系统支持的 Apple 背光设备
-brew install m1ddc       # Apple Silicon 外接 DDC/CI 显示器
-# Intel Mac 外接显示器改用：brew install ddcctl
-```
-
-不必为了外接显示器安装 `brightness`，也不必同时安装 m1ddc 与 ddcctl。新版优先使用应用包内的工具；源码或旧包会查找 PATH、`/opt/homebrew/bin` 和 `/usr/local/bin`。Apple Silicon 使用原生 arm64 版本。工具已安装并不保证某个连接端口、转接器或显示器支持调节。
+如果从源码运行，或继续使用旧版 **1.1.0 Preview 1**，仍需按设备安装辅助工具：Apple 背光设备使用 `brightness`，Apple Silicon 外接屏使用 `m1ddc`，Intel 外接屏使用 `ddcctl`。可通过 [Homebrew](https://brew.sh/) 安装。工具已安装并不保证某个连接端口、转接器或显示器支持调节。
 
 ### 首次打开
 
@@ -57,7 +49,7 @@ brew install m1ddc       # Apple Silicon 外接 DDC/CI 显示器
 
 ## Windows
 
-推荐 Windows 10 / 11 x64 使用 `mingdu-1.1.0-windows-x86_64-setup.exe`：
+推荐 Windows 10 / 11 x64 使用 `mingdu-1.2.0-windows-x86_64-setup.exe`：
 
 1. 双击安装程序，按向导安装。默认位置为 `%LOCALAPPDATA%\Programs\Mingdu`，无需管理员权限。
 2. 从开始菜单打开 Mingdu；托盘图标可能位于折叠菜单中。
@@ -67,7 +59,7 @@ brew install m1ddc       # Apple Silicon 外接 DDC/CI 显示器
 
 预览版尚无受信任的代码签名，SmartScreen 可能提示发布者未知。先确认来源与 SHA-256；不要关闭 Defender 或 SmartScreen。受组织策略阻止时请联系管理员，也可以从源码运行。
 
-便携版 `mingdu-1.1.0-windows-x86_64.zip`：解压完整文件夹，运行 `Mingdu/Mingdu.exe`，不要单独复制 exe。启用登录自启前，把整个文件夹放在固定位置。
+便携版 `mingdu-1.2.0-windows-x86_64.zip`：解压完整文件夹，运行 `Mingdu/Mingdu.exe`，不要单独复制 exe。启用登录自启前，把整个文件夹放在固定位置。
 
 ## 校验下载
 
@@ -76,19 +68,19 @@ brew install m1ddc       # Apple Silicon 外接 DDC/CI 显示器
 Ubuntu：
 
 ```sh
-sha256sum mingdu_1.1.0_all.deb
+sha256sum mingdu_1.2.0_all.deb
 ```
 
 macOS（Intel 请替换文件名）：
 
 ```sh
-shasum -a 256 mingdu-1.1.0-macos-arm64.dmg
+shasum -a 256 mingdu-1.2.0-macos-arm64.dmg
 ```
 
 Windows PowerShell：
 
 ```powershell
-Get-FileHash .\mingdu-1.1.0-windows-x86_64-setup.exe -Algorithm SHA256
+Get-FileHash .\mingdu-1.2.0-windows-x86_64-setup.exe -Algorithm SHA256
 ```
 
 ## 更新与卸载
@@ -106,7 +98,7 @@ Get-FileHash .\mingdu-1.1.0-windows-x86_64-setup.exe -Algorithm SHA256
 
 ## 常见问题
 
-**没有发现显示器？** 先开启显示器 OSD 菜单中的 DDC/CI，尽量用直连线材测试。HDR、扩展坞、KVM、USB 显示适配器和 DisplayLink 可能影响控制；内置 OLED 或虚拟机可能没有系统背光接口。macOS 需安装对应辅助工具。
+**没有发现显示器？** 先开启显示器 OSD 菜单中的 DDC/CI，尽量用直连线材测试。HDR、扩展坞、KVM、USB 显示适配器和 DisplayLink 可能影响控制；内置 OLED 或虚拟机可能没有系统背光接口。macOS 1.2.0 安装包已包含辅助工具；源码运行需自行安装。
 
 **唤醒或插拔后不响应？** 点击刷新重新检测。当前不自动周期轮询。其他软件改变亮度后也需要刷新。
 
@@ -116,10 +108,10 @@ Get-FileHash .\mingdu-1.1.0-windows-x86_64-setup.exe -Algorithm SHA256
 
 ## English quick start
 
-Download from the [preview release](https://github.com/ZhaoOyu/mingdu/releases/tag/v1.1.0-preview.1). The current application UI is Chinese. Physical monitor compatibility is still being tested.
+Download from the [preview release](https://github.com/ZhaoOyu/mingdu/releases/tag/v1.2.0-preview.1). The current application UI is Chinese. Physical monitor compatibility is still being tested.
 
-- **Ubuntu 22.04 / 24.04 / 26.04:** run `sudo apt install ./mingdu_1.1.0_all.deb`, then launch `mingdu`. apt installs the GTK/Python dependencies; no pip needed. External monitors need `ddcutil`; GNOME needs its AppIndicator extension. Enable DDC/CI in the monitor menu. The Linux x86_64 Qt archive bundles Python/Qt but still needs the runtime libraries listed above.
-- **macOS 15+:** choose arm64 for Apple Silicon or x86_64 for Intel. Open the DMG and drag Mingdu.app to Applications. Install helpers using Homebrew: `brew install brightness` for supported native backlights, `brew install m1ddc` for Apple Silicon external monitors, or `brew install ddcctl` for Intel external monitors. Python and Qt are bundled.
+- **Ubuntu 22.04 / 24.04 / 26.04:** run `sudo apt install ./mingdu_1.2.0_all.deb`, then launch `mingdu`. apt installs the GTK/Python dependencies; no pip needed. External monitors need `ddcutil`; GNOME needs its AppIndicator extension. Enable DDC/CI in the monitor menu. The Linux x86_64 Qt archive bundles Python/Qt but still needs the runtime libraries listed above.
+- **macOS 15+:** choose arm64 for Apple Silicon or x86_64 for Intel. Open the DMG and drag Mingdu.app to Applications. Version 1.2.0 uses a native AppKit panel and bundles Python plus the appropriate brightness helpers. No Homebrew or first-launch dependency download is needed. Enable DDC/CI for external monitors.
 - **Windows 10/11 x64:** run the setup EXE. It installs per user without admin rights or a separate Python installation. Alternatively extract the complete portable ZIP and run Mingdu/Mingdu.exe. External monitors use Windows DDC/CI; internal brightness requires working PowerShell/WMI and driver support.
 
 Windows/macOS previews do not have trusted signing or Apple notarization. Verify the release source and SHA-256; follow your OS's normal per-application review process and your organization's policies. Do not disable system protection. Apple's guidance: [opening an app from an unidentified developer](https://support.apple.com/en-us/102445).
@@ -128,4 +120,4 @@ Compare the installer hash with `SHA256SUMS.txt`, using `sha256sum` on Ubuntu, `
 
 Refresh after reconnecting or waking displays. Disable login startup and quit before uninstalling. Remove the deb with `sudo apt remove mingdu`, use Windows Installed Apps, or delete the macOS application/portable folder. Settings are retained. Updates are installed manually; there is no automatic updater.
 
-Upcoming macOS builds bundle the architecture-specific brightness helpers and their licenses/source. No Homebrew or first-launch download is needed. Published Preview 1 and source checkouts still use the manual helper instructions above.
+Source checkouts and the older 1.1.0 Preview 1 require manual Mac helper setup: brightness for supported Apple backlights, m1ddc for Apple Silicon external monitors, or ddcctl for Intel external monitors. Version 1.2.0 installers include these tools and their licenses/source.

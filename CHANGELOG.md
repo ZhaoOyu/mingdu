@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 — 2026-11-03 (Preview 1)
 
 - Brightness indicators now use an upper progress arc, central number and bottom sun across macOS, Qt and GTK.
-- User-focused Chinese/English README with native UI highlights and clear preview download status.
+- Updated Chinese/English download and installation guides for the new preview.
+- Cross-platform helper tests model macOS permission bits while retaining real Unix permission checks.
 
 - macOS now defaults to a real AppKit NSPopover with system material, SF Symbols, native sliders/buttons and light/dark appearance; the Mac bundle no longer contains Qt.
 - AppKit hardware controller preserves debounce, confirmed-value rings, read-only startup and failure rollback; repeated launches activate the existing native panel.
