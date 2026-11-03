@@ -49,6 +49,10 @@ def main():
         try:
             controller.refresh()
             settle(lambda: not controller.scanning and len(controller.displays) == 2)
+            panel.languages.setCurrentIndex(2)
+            assert panel.autostart.text() == "Open at login"
+            panel.languages.setCurrentIndex(1)
+            assert panel.autostart.text() == "登录系统时启动"
             assert hardware.writes == 0  # Opening and rendering never change brightness.
             assert panel.tray_summary.text == "≠"
             first, second = list(controller.displays)

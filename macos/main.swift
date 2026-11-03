@@ -38,6 +38,11 @@ final class BrightnessApp: NSObject, NSApplicationDelegate, ObservableObject {
         if args.contains("--smoke-test") {
             onScan = {
                 precondition(self.devices.count == 2 && self.reading == "≠")
+                self.setLanguage("en")
+                precondition(self.panel.item.button?.toolTip?.hasPrefix("Mingdu") == true)
+                self.setLanguage("zh-Hans")
+                precondition(self.panel.item.button?.toolTip?.hasPrefix("明度") == true)
+                self.setLanguage("system")
                 self.setTarget(self.devices[0].id)
                 precondition(self.reading == "60")
                 self.request(self.devices[0], 25)
@@ -75,8 +80,8 @@ final class BrightnessApp: NSObject, NSApplicationDelegate, ObservableObject {
     func updateIcon() {
         let text = reading
         panel.item.button?.image = ringImage(number: text, fraction: Double(text).map { $0/100 }, marker: "sun")
-        panel.item.button?.title = demo ? " 演示" : ""
-        panel.item.button?.toolTip = "明度 · " + (Int(text) != nil ? text+"%" : text == "≠" ? "各屏幕亮度不同" : message)
+        panel.item.button?.title = demo ? tr(" 演示") : ""
+        panel.item.button?.toolTip = tr("明度 · ") + (Int(text) != nil ? text+"%" : text == "≠" ? tr("各屏幕亮度不同") : tr(message))
         panel.item.button?.setAccessibilityLabel(panel.item.button?.toolTip)
     }
     func scan() {
@@ -130,6 +135,11 @@ final class BrightnessApp: NSObject, NSApplicationDelegate, ObservableObject {
         delayed[key] = task
         DispatchQueue.main.asyncAfter(deadline: .now()+0.16, execute: task)
     }
+    func setLanguage(_ choice: String) {
+        AppLanguage.choice = choice
+        objectWillChange.send()
+        updateIcon()
+    }
     func startup(_ enabled: Bool) {
         do { try login.setEnabled(enabled) } catch { message = error.localizedDescription }
         objectWillChange.send()
@@ -140,9 +150,9 @@ struct BrightnessView: View {
     @ObservedObject var model: BrightnessApp
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            PanelHeading(name: demo ? "明度 · 演示" : "明度", symbol: "sun.max.fill", color: .orange)
+            PanelHeading(name: demo ? tr("明度 · 演示") : tr("明度"), symbol: "sun.max.fill", color: .orange)
             Divider()
-            if model.devices.isEmpty { Text(model.busy ? "正在检测屏幕…" : "连接显示器并开启 DDC/CI，然后点击刷新。") }
+            if model.devices.isEmpty { Text(model.busy ? tr("正在检测屏幕…") : tr("连接显示器并开启 DDC/CI，然后点击刷新。")) }
             else {
                 ScrollView {
                     VStack(spacing: 12) {
@@ -152,13 +162,13 @@ struct BrightnessView: View {
                                     let internalDisplay = device.kind == "apple" || (demo && device.address == "1")
                                     PanelGlyph(symbol: internalDisplay ? "laptopcomputer" : "display",
                                                color: internalDisplay ? .blue : .teal)
-                                    Text(device.name).fontWeight(.semibold)
+                                    Text(device.displayName).fontWeight(.semibold)
                                     Spacer()
                                     Text("\(model.pending[device.id] ?? device.value)%").bold().monospacedDigit()
                                 }
                                 BrightnessSlider(percent: Binding(get: { model.pending[device.id] ?? device.value },
                                                                   set: { model.request(device, $0) }),
-                                                 label: device.name+"亮度")
+                                                 label: device.displayName+tr("亮度"))
                                     .disabled(model.busy).padding(.leading, 34)
                             }
                             Divider()
@@ -166,30 +176,34 @@ struct BrightnessView: View {
                     }.padding(.trailing, 3)
                 }.frame(height: min(CGFloat(model.devices.count)*68, 250))
             }
-            Text("所有屏幕 · 快捷亮度").font(.caption).foregroundStyle(.secondary)
+            Text(tr("所有屏幕 · 快捷亮度")).font(.caption).foregroundStyle(.secondary)
             HStack {
                 ForEach([25,60,100], id: \.self) { percent in
                     let selected = !model.devices.isEmpty && model.pending.isEmpty && model.errors.isEmpty && model.devices.allSatisfy { $0.value == percent }
-                    Button((percent == 25 ? "夜间" : percent == 60 ? "日常" : "明亮")+" \(percent)%") {
+                    Button((percent == 25 ? tr("夜间") : percent == 60 ? tr("日常") : tr("明亮"))+" \(percent)%") {
                         for device in model.devices { model.request(device, percent) }
                     }.tint(selected ? .accentColor : nil)
                     if percent != 100 { Spacer() }
                 }
             }.disabled(model.devices.isEmpty || model.busy)
             Divider()
-            Picker("状态栏屏幕", selection: Binding(get: { model.selection }, set: model.setTarget)) {
-                Text("所有显示器").tag("all")
-                ForEach(model.devices) { Text($0.name).tag($0.id) }
+            Picker(tr("状态栏屏幕"), selection: Binding(get: { model.selection }, set: model.setTarget)) {
+                Text(tr("所有显示器")).tag("all")
+                ForEach(model.devices) { Text($0.displayName).tag($0.id) }
             }
-            Text(model.message).font(.caption).foregroundStyle(.secondary)
-            HStack { Button("刷新", action: model.scan).disabled(model.busy || !model.pending.isEmpty); Spacer()
-                Button("设备诊断") { model.diagnostics.toggle() }; Spacer(); Button("退出") { NSApp.terminate(nil) } }
+            Text(tr(model.message)).font(.caption).foregroundStyle(.secondary)
+            HStack { Button(tr("刷新"), action: model.scan).disabled(model.busy || !model.pending.isEmpty); Spacer()
+                Button(tr("设备诊断")) { model.diagnostics.toggle() }; Spacer(); Button(tr("退出")) { NSApp.terminate(nil) } }
             if model.diagnostics {
-                ScrollView { Text((model.warnings+["连接或唤醒显示器后请刷新。外接屏幕需开启 DDC/CI。"]).joined(separator: "\n"))
+                ScrollView { Text((model.warnings.map(tr)+[tr("连接或唤醒显示器后请刷新。外接屏幕需开启 DDC/CI。")]).joined(separator: "\n"))
                     .frame(maxWidth: .infinity, alignment: .leading).font(.caption).textSelection(.enabled) }.frame(height: 72)
             }
-            Toggle("登录系统时启动", isOn: Binding(get: { model.login.enabled }, set: model.startup)).disabled(demo)
-        }.padding(18).frame(width: 360).fixedSize(horizontal: false, vertical: true)
+            Picker(AppLanguage.english ? "Language" : "语言", selection: Binding(
+                get: { AppLanguage.choice }, set: model.setLanguage)) {
+                ForEach(Array(zip(AppLanguage.choices, AppLanguage.names)), id: \.0) { Text($0.1).tag($0.0) }
+            }
+            Toggle(tr("登录系统时启动"), isOn: Binding(get: { model.login.enabled }, set: model.startup)).disabled(demo)
+        }.padding(18).frame(width: AppLanguage.english ? 400 : 360).fixedSize(horizontal: false, vertical: true)
     }
 }
 

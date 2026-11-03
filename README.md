@@ -2,7 +2,7 @@
 
 外接屏太亮，笔记本屏幕却刚刚好？从菜单栏点开明度，每块屏幕都有自己的亮度条。只拖动想调的那一块就行，不用伸手找显示器背后的按钮。
 
-**[下载明度 1.2.1 预览版](#下载)** · [English](README.en.md)
+**[下载明度 1.2.2 预览版](#下载)** · [English](README.en.md)
 
 <img src="docs/menubar-121.png" width="270" alt="三个太阳圆环分别显示 25%、60%、100% 亮度">
 
@@ -18,11 +18,13 @@
 
 | 你的电脑 | 安装包 |
 | --- | --- |
-| macOS 15 及以上 · M 系列芯片 | [下载 Mac 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-arm64.dmg) |
-| macOS 15 及以上 · Intel 芯片 | [下载 Intel Mac 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-macos-x86_64.dmg) |
-| Windows 10 / 11 · 64 位 | [下载 Windows 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu-1.2.1-windows-x86_64-setup.exe) |
-| Ubuntu 22.04 / 24.04 / 26.04 | [下载 Ubuntu 安装包](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.1-preview.1/mingdu_1.2.1_all.deb) |
+| macOS 15 及以上 · M 系列芯片 | [下载 Mac 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.2-preview.1/mingdu-1.2.2-macos-arm64.dmg) |
+| macOS 15 及以上 · Intel 芯片 | [下载 Intel Mac 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.2-preview.1/mingdu-1.2.2-macos-x86_64.dmg) |
+| Windows 10 / 11 · 64 位 | [下载 Windows 版](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.2-preview.1/mingdu-1.2.2-windows-x86_64-setup.exe) |
+| Ubuntu 22.04 / 24.04 / 26.04 | [下载 Ubuntu 安装包](https://github.com/ZhaoOyu/mingdu/releases/download/v1.2.2-preview.1/mingdu_1.2.2_all.deb) |
 
 Mac 用户打开 DMG，将 Mingdu 拖入「应用程序」即可，亮度辅助工具已随包提供。调节外接屏幕时，请在显示器自身的菜单里开启 **DDC/CI**。重新连接屏幕后，点「刷新」即可重新检测。
 
 [安装与常见问题](docs/INSTALL.md) · [反馈显示器兼容性](https://github.com/ZhaoOyu/mingdu/issues)
+
+应用默认跟随系统语言。在面板底部打开「语言」，可随时选择「简体中文」或「English」。

@@ -1,4 +1,6 @@
 """AppKit menu-bar app: native popover, system material, SF Symbols and controls."""
+from . import language
+from .language import tr
 import AppKit as A
 import objc
 from Foundation import NSObject, NSTimer, NSRunLoop, NSRunLoopCommonModes, NSAttributedString
@@ -12,7 +14,7 @@ from .startup import Startup
 
 
 def symbol(name, title):
-    return A.NSImage.imageWithSystemSymbolName_accessibilityDescription_(name, title)
+    return A.NSImage.imageWithSystemSymbolName_accessibilityDescription_(name, tr(title))
 
 
 def status_image(summary):
@@ -49,6 +51,7 @@ class BrightnessPanel(NSObject):
     def configure(self, controller, demo=False, settings=None, startup=None):
         self.controller, self.demo = controller, demo
         self.settings = settings if settings is not None else Settings()
+        language.select(self.settings.data.get("interfaceLanguage"))
         self.startup = startup if startup is not None else Startup()
         self.generation = -1
         self.diagnostics_open = False
@@ -58,7 +61,7 @@ class BrightnessPanel(NSObject):
         self.button = self.status.button()
         self.button.setTarget_(self)
         self.button.setAction_('toggle:')
-        self.button.setTitle_('演示' if demo else '')
+        self.button.setTitle_(tr('演示' if demo else ''))
         self.popover = A.NSPopover.alloc().init()
         self.popover.setBehavior_(A.NSPopoverBehaviorTransient)
         self.popover.setAnimates_(True)
@@ -74,13 +77,13 @@ class BrightnessPanel(NSObject):
 
     @objc.python_method
     def text(self, title, x, top, width, size=13, bold=False, secondary=False, height=20):
-        field = A.NSTextField.labelWithString_(title)
+        field = A.NSTextField.labelWithString_(tr(title))
         field.setFrame_(self.rect(x, top, width, height))
         field.setFont_(A.NSFont.systemFontOfSize_weight_(size, A.NSFontWeightSemibold if bold else A.NSFontWeightRegular))
         field.setTextColor_(A.NSColor.secondaryLabelColor() if secondary else A.NSColor.labelColor())
         field.setLineBreakMode_(A.NSLineBreakByWordWrapping if height > 24 else A.NSLineBreakByTruncatingTail)
         field.setMaximumNumberOfLines_(2 if height > 24 else 1)
-        field.setToolTip_(title)
+        field.setToolTip_(tr(title))
         self.content.addSubview_(field)
         return field
 
@@ -104,7 +107,7 @@ class BrightnessPanel(NSObject):
 
     @objc.python_method
     def action(self, title, selector, x, top, width, image=None):
-        button = A.NSButton.buttonWithTitle_target_action_(title, self, selector)
+        button = A.NSButton.buttonWithTitle_target_action_(tr(title), self, selector)
         button.setFrame_(self.rect(x, top, width, 28))
         button.setBezelStyle_(A.NSBezelStyleRounded)
         button.setFont_(A.NSFont.systemFontOfSize_(12))
@@ -118,7 +121,7 @@ class BrightnessPanel(NSObject):
     def build(self):
         self.keys = list(self.controller.displays)
         monitor_height = max(1, len(self.keys)) * 100
-        self.height = 48 + monitor_height + 240 + (142 if self.diagnostics_open else 0)
+        self.height = 48 + monitor_height + 240 + (142 if self.diagnostics_open else 0) + 38
         screen = self.button.window().screen() or A.NSScreen.mainScreen()
         self.visible_height = min(self.height, screen.visibleFrame().size.height - 70, 720)
         self.material = A.NSVisualEffectView.alloc().initWithFrame_(((0, 0), (340, self.visible_height)))
@@ -157,7 +160,7 @@ class BrightnessPanel(NSObject):
             slider.setFrame_(self.rect(50, top + 45, 244, 26))
             slider.setContinuous_(True)
             slider.setTag_(index)
-            slider.setAccessibilityLabel_(device.name + '亮度百分比')
+            slider.setAccessibilityLabel_(tr(device.name + '亮度百分比'))
             self.content.addSubview_(slider)
             self.glyph('sun.max', '提高亮度', 302, top + 51, 16)
             self.rows[key] = (slider, value)
@@ -178,12 +181,12 @@ class BrightnessPanel(NSObject):
         title = self.text('状态栏屏幕', 20, top + 91, 126, 12)
         self.centered(title, 20, top + 103, 126)
         self.target = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(self.rect(150, top + 88, 172, 30), False)
-        self.target.addItemsWithTitles_(['所有显示器'] + [self.controller.displays[key].name for key in self.keys])
+        self.target.addItemsWithTitles_([tr('所有显示器')] + [tr(self.controller.displays[key].name) for key in self.keys])
         selected = self.settings.data['scroll_target']
         self.target.selectItemAtIndex_(self.keys.index(selected) + 1 if selected in self.keys else 0)
         self.target.setTarget_(self)
         self.target.setAction_('target:')
-        self.target.setAccessibilityLabel_('状态栏显示的屏幕')
+        self.target.setAccessibilityLabel_(tr('状态栏显示的屏幕'))
         self.content.addSubview_(self.target)
         self.message = self.text('', 20, top + 128, 300, 11, secondary=True, height=34)
         self.refresh_button = self.action('刷新', 'refresh:', 18, top + 167, 88, 'arrow.clockwise')
@@ -204,7 +207,15 @@ class BrightnessPanel(NSObject):
             scroller.setDocumentView_(self.diagnostic_text)
             self.content.addSubview_(scroller)
             top += 142
-        self.auto = A.NSButton.checkboxWithTitle_target_action_('登录系统时启动', self, 'startup:')
+        self.text("Language" if language.english() else "语言", 20, top + 208, 130, 12)
+        self.languages = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(self.rect(164, top + 208 - 4, 158, 28), False)
+        self.languages.addItemsWithTitles_(language.names())
+        self.languages.selectItemAtIndex_(language.CHOICES.index(language.choice))
+        self.languages.setTarget_(self)
+        self.languages.setAction_("languageChanged:")
+        self.content.addSubview_(self.languages)
+        top += 38
+        self.auto = A.NSButton.checkboxWithTitle_target_action_(tr('登录系统时启动'), self, 'startup:')
         self.auto.setFrame_(self.rect(20, top + 208, 200, 22))
         self.auto.setFont_(A.NSFont.systemFontOfSize_(11))
         self.auto.setEnabled_(not self.demo)
@@ -236,23 +247,23 @@ class BrightnessPanel(NSObject):
         if self.icon_key != self.summary:
             self.button.setImage_(status_image(self.summary))
             self.icon_key = self.summary
-        self.button.setToolTip_('明度\n' + self.summary.description)
-        self.button.setAccessibilityLabel_('明度，' + self.summary.description)
+        self.button.setToolTip_(tr('明度\n' + self.summary.description))
+        self.button.setAccessibilityLabel_(tr('明度，' + self.summary.description))
         for key, (slider, label) in self.rows.items():
             slider.setDoubleValue_(max(1, controller.values[key]))
             slider.setEnabled_(not controller.scanning)
-            label.setStringValue_(f'{controller.values[key]}%' + (' ·' if key in controller.pending else ''))
+            label.setStringValue_(tr(f'{controller.values[key]}%' + (' ·' if key in controller.pending else '')))
         for button in self.presets:
             button.setEnabled_(bool(controller.displays) and not controller.scanning)
             button.setState_(int(bool(controller.confirmed) and not controller.pending and not controller.errors
                                  and all(v == button.tag() for v in controller.confirmed.values())))
         self.refresh_button.setEnabled_(not controller.scanning)
-        self.message.setStringValue_(('演示 · ' if self.demo else '') + controller.message)
+        self.message.setStringValue_(tr(('演示 · ' if self.demo else '') + controller.message))
         self.message.setTextColor_(A.NSColor.systemRedColor() if controller.error else A.NSColor.secondaryLabelColor())
-        self.message.setToolTip_(self.message.stringValue())
+        self.message.setToolTip_(tr(self.message.stringValue()))
         if self.diagnostics_open:
-            self.diagnostic_text.setString_('\n\n'.join(controller.warnings + [
-                '连接或唤醒显示器后请刷新。外接屏幕需开启 DDC/CI。新版 Mac 安装包自带辅助工具。']))
+            self.diagnostic_text.setString_(tr('\n\n'.join(controller.warnings + [
+                '连接或唤醒显示器后请刷新。外接屏幕需开启 DDC/CI。新版 Mac 安装包自带辅助工具。'])))
 
     def brightness_(self, sender):
         self.controller.request(self.keys[sender.tag()], sender.doubleValue())
@@ -280,6 +291,19 @@ class BrightnessPanel(NSObject):
     def refresh_(self, _):
         self.controller.refresh()
         self.tick_(None)
+
+    def languageChanged_(self, sender):
+        value = language.CHOICES[sender.indexOfSelectedItem()]
+        if not self.demo:
+            try:
+                self.settings.set_language(value)
+            except OSError as error:
+                self.controller.status(str(error), True)
+                return
+        language.select(value)
+        self.button.setTitle_(tr("演示") if self.demo else "")
+        self.build()
+        self.update()
 
     def startup_(self, sender):
         try:

@@ -34,10 +34,17 @@ class Settings:
         self.data = {"scroll_target": "all"}
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and data.get("interfaceLanguage") in ("system", "en", "zh-Hans"):
+                self.data["interfaceLanguage"] = data["interfaceLanguage"]
             if isinstance(data, dict) and isinstance(data.get("scroll_target"), str):
                 self.data["scroll_target"] = data["scroll_target"]
         except (OSError, ValueError):
             pass
+
+    def set_language(self, value):
+        new_data = dict(self.data, interfaceLanguage=value)
+        atomic_write(self.path, json.dumps(new_data, ensure_ascii=False, indent=2) + "\n")
+        self.data = new_data
 
     def save(self):
         atomic_write(self.path, json.dumps(self.data, ensure_ascii=False, indent=2) + "\n")

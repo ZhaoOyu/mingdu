@@ -1,4 +1,6 @@
 """GTK panel and AppIndicator status menu. All widget access stays on GTK's thread."""
+from . import language
+from .language import tr
 from pathlib import Path
 import signal
 
@@ -31,7 +33,7 @@ CSS = b"""
 
 
 def label(text, style=None, xalign=0):
-    widget = Gtk.Label(label=text, xalign=xalign)
+    widget = Gtk.Label(label=tr(text), xalign=xalign)
     if style:
         widget.get_style_context().add_class(style)
     widget.set_valign(Gtk.Align.CENTER)
@@ -48,6 +50,7 @@ class BrightnessApp(Gtk.Application):
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.hardware, self.args = hardware, args
         self.settings = Settings()
+        language.select(self.settings.data.get("interfaceLanguage"))
         self.window = None
         self.worker = None
         self.displays = {}
@@ -78,7 +81,7 @@ class BrightnessApp(Gtk.Application):
             "mingdu-demo" if self.args.demo else "mingdu-brightness",
             "display-brightness-symbolic", AppIndicator.IndicatorCategory.HARDWARE,
         )
-        self.indicator.set_title("明度 · 显示器亮度")
+        self.indicator.set_title(tr("明度 · 显示器亮度"))
         self.indicator.set_icon_theme_path(self.icon_cache.directory.name)
         self.indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
         self.indicator.connect("scroll-event", self._scroll)
@@ -96,7 +99,7 @@ class BrightnessApp(Gtk.Application):
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self.window = Gtk.ApplicationWindow(application=self, title="明度" + (" · 演示" if self.args.demo else ""))
+        self.window = Gtk.ApplicationWindow(application=self, title=tr("明度" + (" · 演示" if self.args.demo else "")))
         self.window.set_default_size(380, 520)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_icon_name("display-brightness-symbolic")
@@ -104,6 +107,9 @@ class BrightnessApp(Gtk.Application):
         self.window.connect("delete-event", self._hide)
         self.window.connect("key-press-event", self._key_pressed)
         self.window.connect("focus-out-event", self._focus_out)
+        self._build_content()
+
+    def _build_content(self):
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.window.add(scroll)
@@ -119,8 +125,8 @@ class BrightnessApp(Gtk.Application):
         self.count_label = label("检测中", "muted")
         heading.pack_start(self.count_label, False, False, 0)
         self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
-        self.refresh_button.set_tooltip_text("重新检测显示器并读取当前亮度")
-        self.refresh_button.get_accessible().set_name("刷新显示器")
+        self.refresh_button.set_tooltip_text(tr("重新检测显示器并读取当前亮度"))
+        self.refresh_button.get_accessible().set_name(tr("刷新显示器"))
         self.refresh_button.connect("clicked", lambda *_: self.refresh())
         heading.pack_end(self.refresh_button, False, False, 0)
         content.pack_start(heading, False, False, 0)
@@ -131,8 +137,8 @@ class BrightnessApp(Gtk.Application):
         self.presets = box(spacing=6)
         self.preset_handlers = []
         for title, value in [("夜间 25%", 25), ("日常 60%", 60), ("明亮 100%", 100)]:
-            button = Gtk.ToggleButton(label=title)
-            button.set_tooltip_text(f"将所有显示器调节到 {value}%")
+            button = Gtk.ToggleButton(label=tr(title))
+            button.set_tooltip_text(tr(f"将所有显示器调节到 {value}%"))
             handler = button.connect("clicked", lambda _, v=value: self.set_all(v))
             self.preset_handlers.append((button, value, handler))
             self.presets.pack_start(button, True, True, 0)
@@ -141,8 +147,8 @@ class BrightnessApp(Gtk.Application):
         target_row = box()
         target_row.pack_start(label("状态栏屏幕"), True, True, 0)
         self.target_combo = Gtk.ComboBoxText()
-        self.target_combo.set_tooltip_text("选择圆环显示和托盘滚轮控制的屏幕；滚轮支持取决于桌面环境。")
-        self.target_combo.get_accessible().set_name("状态栏显示与滚轮控制的屏幕")
+        self.target_combo.set_tooltip_text(tr("选择圆环显示和托盘滚轮控制的屏幕；滚轮支持取决于桌面环境。"))
+        self.target_combo.get_accessible().set_name(tr("状态栏显示与滚轮控制的屏幕"))
         for renderer in self.target_combo.get_cells():
             renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
             renderer.set_property("max-width-chars", 16)
@@ -155,7 +161,7 @@ class BrightnessApp(Gtk.Application):
         self.status_label.set_size_request(-1, 30)
         content.pack_start(self.status_label, False, False, 0)
         actions = box(spacing=6)
-        self.diagnostics = Gtk.Expander(label="设备诊断")
+        self.diagnostics = Gtk.Expander(label=tr("设备诊断"))
         self.diagnostic_text = label("")
         self.diagnostic_text.set_line_wrap(True)
         self.diagnostic_text.set_max_width_chars(36)
@@ -167,20 +173,50 @@ class BrightnessApp(Gtk.Application):
         self.diagnostics.add(diagnostic_scroll)
         self.diagnostics.connect("notify::expanded", lambda *_: GLib.idle_add(self._resize_panel))
         actions.pack_start(self.diagnostics, True, True, 0)
-        quit_button = Gtk.Button(label="退出")
+        quit_button = Gtk.Button(label=tr("退出"))
         quit_button.set_valign(Gtk.Align.START)
         quit_button.connect("clicked", self._quit)
         actions.pack_end(quit_button, False, False, 0)
         content.pack_start(actions, False, False, 0)
         content.pack_start(Gtk.Separator(), False, False, 0)
+        content.pack_start(self.language_row(), False, False, 0)
         footer = box()
-        self.autostart_switch = Gtk.CheckButton(label="登录系统时启动")
+        self.autostart_switch = Gtk.CheckButton(label=tr("登录系统时启动"))
         self.autostart_switch.set_active(self.settings.autostart)
         self.autostart_switch.set_sensitive(not self.args.demo)
         self.autostart_switch.connect("toggled", lambda button: self._autostart(button.get_active()))
         footer.pack_start(self.autostart_switch, True, True, 0)
         footer.pack_end(label("v" + __version__, "muted"), False, False, 0)
         content.pack_start(footer, False, False, 0)
+
+    def language_row(self):
+        row = Gtk.Box(spacing=8)
+        row.pack_start(Gtk.Label(label=tr("Language" if language.english() else "语言"), xalign=0), True, True, 0)
+        combo = self.languages = Gtk.ComboBoxText()
+        for key, name in zip(language.CHOICES, language.names()):
+            combo.append(key, name)
+        combo.set_active_id(language.choice)
+        combo.connect("changed", self.change_language)
+        row.pack_end(combo, False, False, 0)
+        return row
+
+    def change_language(self, combo):
+        value = combo.get_active_id()
+        if not self.args.demo:
+            try:
+                self.settings.set_language(value)
+            except OSError as error:
+                self._status(str(error), True)
+                return
+        language.select(value)
+        self.window.get_child().destroy()
+        self.window.set_title(tr("明度 · 演示" if self.args.demo else "明度"))
+        self.indicator.set_title(tr("明度 · 显示器亮度"))
+        self._build_content()
+        self._render_displays()
+        self._diagnostics()
+        self._status(getattr(self, "_last_message", "已读取当前亮度"))
+        self.window.show_all()
 
     def _resize_panel(self):
         if self.closed:
@@ -240,27 +276,27 @@ class BrightnessApp(Gtk.Application):
             card.pack_start(top, False, False, 0)
             controls = box(spacing=6)
             minus = Gtk.Button.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.MENU)
-            minus.set_tooltip_text("降低 5%")
+            minus.set_tooltip_text(tr("降低 5%"))
             minus.connect("clicked", lambda _, key=display.id: self.adjust(key, -5))
             controls.pack_start(minus, False, False, 0)
             scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1, 100, 1)
             scale.set_draw_value(False)
             scale.set_value(max(1, display.value))
-            scale.get_accessible().set_name(f"{display.name}亮度")
+            scale.get_accessible().set_name(tr(f"{display.name}亮度"))
             scale.connect("value-changed", self._scale_changed, display.id)
             controls.pack_start(scale, True, True, 0)
             plus = Gtk.Button.new_from_icon_name("list-add-symbolic", Gtk.IconSize.MENU)
-            plus.set_tooltip_text("提高 5%")
+            plus.set_tooltip_text(tr("提高 5%"))
             plus.connect("clicked", lambda _, key=display.id: self.adjust(key, 5))
             controls.pack_end(plus, False, False, 0)
             card.pack_start(controls, False, False, 0)
             self.cards[display.id] = (scale, number, card)
             self.monitor_box.pack_start(card, False, False, 0)
-        self.count_label.set_text(f"{len(self.displays)} 台屏幕")
+        self.count_label.set_text(tr(f"{len(self.displays)} 台屏幕"))
         self.target_combo.remove_all()
-        self.target_combo.append("all", "所有显示器")
+        self.target_combo.append("all", tr("所有显示器"))
         for display in self.displays.values():
-            self.target_combo.append(display.id, display.name)
+            self.target_combo.append(display.id, tr(display.name))
         target = self.settings.data["scroll_target"]
         self.target_combo.set_active_id(target if target in self.displays else "all")
         self.updating = False
@@ -271,7 +307,7 @@ class BrightnessApp(Gtk.Application):
         GLib.idle_add(self._resize_panel)
 
     def _menu_item(self, menu, text, callback=None):
-        item = Gtk.MenuItem(label=text)
+        item = Gtk.MenuItem(label=tr(text))
         if callback:
             item.connect("activate", lambda *_: callback())
         menu.append(item)
@@ -308,7 +344,7 @@ class BrightnessApp(Gtk.Application):
             self.control_items.append(self._menu_item(menu, title, callback))
         menu.append(Gtk.SeparatorMenuItem())
         self.menu_refresh = self._menu_item(menu, "重新检测显示器", self.refresh)
-        self.menu_autostart = Gtk.CheckMenuItem(label="登录后自动启动")
+        self.menu_autostart = Gtk.CheckMenuItem(label=tr("登录后自动启动"))
         self.menu_autostart.set_active(self.settings.autostart)
         self.menu_autostart.set_sensitive(not self.args.demo)
         self.menu_autostart.connect("toggled", lambda item: self._autostart(item.get_active()))
@@ -496,17 +532,17 @@ class BrightnessApp(Gtk.Application):
             if key in self.cards:
                 scale, number, _ = self.cards[key]
                 scale.set_value(max(1, value))
-                number.set_text(f"{value}%" + (" ·" if key in self.pending else ""))
+                number.set_text(tr(f"{value}%" + (" ·" if key in self.pending else "")))
             if key in self.menu_displays:
-                self.menu_displays[key].set_label(f"{self.displays[key].name}   {value}%" + (" …" if key in self.pending else ""))
+                self.menu_displays[key].set_label(tr(f"{self.displays[key].name}   {value}%" + (" …" if key in self.pending else "")))
         target = self.target_combo.get_active_id()
         self.tray_summary = brightness_summary(self.displays, self.confirmed, target, self.write_errors)
         path = self.icon_cache.path(self.tray_summary)
         if path != self.icon_path:
-            self.indicator.set_icon_full(str(path), self.tray_summary.description)
+            self.indicator.set_icon_full(str(path), tr(self.tray_summary.description))
             self.icon_path = path
-        self.indicator.set_label("演示" if self.args.demo else "", "")
-        self.indicator.set_title("明度 · " + self.tray_summary.description)
+        self.indicator.set_label(tr("演示" if self.args.demo else ""), "")
+        self.indicator.set_title(tr("明度 · " + self.tray_summary.description))
         for button, value, handler in self.preset_handlers:
             button.handler_block(handler)
             button.set_active(bool(self.confirmed) and not self.pending and not self.write_errors
@@ -522,11 +558,12 @@ class BrightnessApp(Gtk.Application):
             "终端诊断：ddcutil detect；ddcutil environment。\n"
             "首次安装依赖后可能需要注销并重新登录。"
         )
-        self.diagnostic_text.set_text("\n\n".join(self.warnings + [help_text]))
+        self.diagnostic_text.set_text(tr("\n\n".join(self.warnings + [help_text])))
         self.diagnostics.set_expanded(not bool(self.displays))
 
     def _status(self, text, error=False):
-        self.status_label.set_text(("演示 · " if self.args.demo else "") + text)
+        self._last_message = text
+        self.status_label.set_text(tr(("演示 · " if self.args.demo else "") + text))
         GLib.idle_add(self._resize_panel)
         context = self.status_label.get_style_context()
         (context.add_class if error else context.remove_class)("error")

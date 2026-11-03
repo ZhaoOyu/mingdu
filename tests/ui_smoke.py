@@ -47,6 +47,10 @@ def main():
         app.activate()
         try:
             pump_until(lambda: len(app.displays) == 2 and not app.scanning)
+            app.languages.set_active_id("en")
+            assert app.autostart_switch.get_label() == "Open at login"
+            app.languages.set_active_id("zh-Hans")
+            assert app.autostart_switch.get_label() == "登录系统时启动"
             assert hardware.writes == 0
             assert app.tray_summary.text == "≠"
             first, second = list(app.displays)

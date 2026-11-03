@@ -10,6 +10,12 @@ struct DisplayDevice: Identifiable, Encodable {
     let name: String, kind: String, address: String
     let maximum: Int
     var value: Int
+    var displayName: String {
+        switch kind {
+        case "demo", "apple", "ddcctl": return tr(name)
+        default: return name
+        }
+    }
     var id: String { kind + ":" + address }
     enum CodingKeys: String, CodingKey { case id, name, kind, address, maximum, value }
     func encode(to encoder: Encoder) throws {
